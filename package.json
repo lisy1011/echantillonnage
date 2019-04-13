@@ -1,0 +1,23 @@
+{
+  "name": "tp3-web",
+  "version": "1.0.0",
+  "description": "TP3 node js  express mongoDb javascript",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "node",
+    "express",
+    "mongo",
+    "javascript"
+  ],
+  "author": "Rabah-Anita-Olivier",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.18.3",
+    "express": "^4.16.4",
+    "mongodb": "^3.2.3",
+    "mongoose": "^5.4.20"
+  }
+}

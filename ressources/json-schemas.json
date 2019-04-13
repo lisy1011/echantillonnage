@@ -1,0 +1,201 @@
+{
+   "jsonSchemaLieux" :
+    {
+       
+            "type" : "object",  
+            "properties":{
+			             		
+							"id":{"type":"number"},
+							"nom":{"type":"string"},
+							"infos":{"type":"string"},
+							"coordonnees":{																             
+										   "type" : "array",
+										   "items" : {
+													  "type":"object",
+													  "properties":{
+																	"latitude" : {"type" : "number"},
+																	"longitude" : {"type" : "number"}
+																   },
+													 "required": ["latitude","longitude"]
+													 }
+										  },
+							"date_creation":{ "type" : "string" },
+							"type_lieu":{ "type" : "string" 
+										  "enum" : {"point_precis","ensemble_points","itineraire","region_fermee"}
+										}
+																				 
+						  },													   
+			"required": ["id", "nom", "coordonnees", "date_creation","type_lieu"]																															                             
+    },
+	
+	"jsonSchemaTabLieux" :
+    {
+       
+            "type" : "array",  
+			"items" : {
+                 "type" : "object",  
+                 "properties":{
+			             		
+							"id":{"type":"number"},
+							"nom":{"type":"string"},
+							"infos":{"type":"string"},
+							"coordonnees":{																             
+										   "type" : "array",
+										   "items" : {
+													  "type":"object",
+													  "properties":{
+																	"latitude" : {"type" : "number"},
+																	"longitude" : {"type" : "number"}
+																   },
+													 "required": ["latitude","longitude"]
+													 }
+										  },
+							"date_creation":{ "type" : "string" },
+							"type_lieu":{ "type" : "string" 
+										  "enum" : {"point_precis","ensemble_points","itineraire","region_fermee"}
+										}
+																				 
+						  },													   
+			"required": ["id", "nom", "coordonnees", "date_creation","type_lieu"]
+                       }			
+    },
+	
+	"jsonSchemaCollections" :
+        {[{
+            "type" : "object",
+            "items" : {
+                "type" : "object",
+                "properties" : {
+				                "id": { "type": "number" },
+                                "nom": { "type" : "string" },
+                                "partagee_avec":{
+								                 "type" : "array",
+                                                 "items" : {"type" : "number"}					        
+                                                },
+							    "lieux":{
+								         "type":"array",
+										 "items":{
+										           "type":"object",
+												   "properties":{
+												                 "id":{"type":"number"},
+																 "nom":{"type":"string"},
+																 "infos":{"type":"string"},
+																 "coordonnees":{																             
+																                "type" : "array",
+                                                                                "items" : {
+																				            "type":"object",
+																							"properties":{
+																							              "latitude" : {"type" : "number"},
+																							              "longitude" : {"type" : "number"}
+																										  },
+																							 "required": ["latitude","longitude"]
+																				           }
+																		        }
+																 "date_creation":{ "type" : "string" },
+																 "type_lieu":{ "type" : "string" 
+																               "enum" : {"point_precis","ensemble_points","itineraire","region_fermee"}
+																			 }
+																 
+												                },
+													"required": ["id", "nom", "coordonnees", "date_creation"]
+																
+											      }								
+								        }
+               
+                                },
+			    "required": ["id", "nom"]
+			}
+			 
+        }}],
+	
+
+
+    "jsonSchemaTabCollections" :
+        {
+            "type" : "array",
+            "items" : {
+                "type" : "object",
+                "properties" : {
+				                "id": { "type": "number" },
+                                "nom": { "type" : "string" },
+                                "partagee_avec":{
+								                 "type" : "array",
+                                                 "items" : {"type" : "number"}					        
+                                                },
+							    "lieux":{
+								         "type":"array",
+										 "items":{
+										           "type":"object",
+												   "properties":{
+												                 "id":{"type":"number"},
+																 "nom":{"type":"string"},
+																 "infos":{"type":"string"},
+																 "coordonnees":{																             
+																                "type" : "array",
+                                                                                "items" : {
+																				            "type":"object",
+																							"properties":{
+																							              "latitude" : {"type" : "number"},
+																							              "longitude" : {"type" : "number"}
+																										  },
+																							 "required": ["latitude","longitude"]
+																				           }
+																		        }
+																 "date_creation":{ "type" : "string" },
+																 "type_lieu":{ "type" : "string" 
+																               "enum" : {"point_precis","ensemble_points","itineraire","region_fermee"}
+																			 }
+																 
+												                },
+													"required": ["id", "nom", "coordonnees", "date_creation"]
+																
+											      }								
+								        }
+               
+                                },
+			    "required": ["id", "nom"]
+			}
+			 
+        },
+	
+    "jsonSchemaTabCollectionPartagee" :
+    {
+	        "type" : "object",
+            "properties" : {
+			                "id":{"type":"number"},
+							"nom":{ "type" : "string" },
+							"partagee_avec":{
+								                 "type" : "array",
+                                                 "items" : {"type" : "number"}					        
+                                            }
+			                }
+			"required": ["id","nom","partagee_avec"]       
+	}
+
+	"jsonSchema_post_membres" :
+    {  
+            "type" : "object",
+            "properties" : {
+                "id": { "type": "number" },
+				"nom_util": { "type" : "string" },
+                "courriel": { "type" : "string" } ,
+  
+            },
+            "required": ["id","nom_util","courriel"]       
+    },
+		
+	
+	"jsonSchemaTabMembres" :
+    {  
+            "type" : "object",
+            "properties" : {
+                "id": { "type": "number" },
+				"nom_util": { "type" : "string" },
+                "courriel": { "type" : "string" } ,
+                "collections": { "type" : "array" } ,
+                "lieux_non_classes": { "type" : "array" } ,
+				"collectionsPartagees": { "type" : "array" } 
+            },
+            "required": ["id","nom_util","courriel"]       
+    },
+		
