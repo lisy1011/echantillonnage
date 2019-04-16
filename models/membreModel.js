@@ -55,19 +55,19 @@ var LieuSchema = new Schema({
 var CollectionCreeSchema = new Schema({
     _id: { 
         type: Number,
-        required: true
+        required: false
     },
     nom: { 
         type: String,
         trim: true,
         required: true
     },
-    partage_avec: [Number],
+    partagee_avec: [Number],
     lieux: [LieuSchema]
     
-});
+},{autoIndex:true});
 
-var CollectionInviteSchema = new Schema({
+var CollectionInviteeSchema = new Schema({
     id_createur: { 
         type: Number,
         required: true
@@ -98,7 +98,7 @@ var MembreSchema = new Schema({
     },
     collections_crees: [CollectionCreeSchema],
     lieux_non_classes : [LieuSchema],
-    collections_invite : [CollectionInviteSchema],
+    collections_invitees : [CollectionInviteeSchema],
     mot_passe: {
         type: String,
         trim: true,
@@ -118,7 +118,7 @@ module.exports.LieuModel = mongoose.model('Lieu', LieuSchema);
 module.exports.CollectionCreeModel = mongoose.model('CollectionCree', CollectionCreeSchema);
 
 // Rendre le modèle CollectionInvite disponible de l'extérieur.
-module.exports.CollectionInviteModel = mongoose.model('CollectionInvite', CollectionInviteSchema);
+module.exports.CollectionInviteeModel = mongoose.model('CollectionInvitee', CollectionInviteeSchema);
 
 // Rendre le modèle Membre disponible de l'extérieur.
 module.exports.MembreModel = mongoose.model('Membre', MembreSchema);

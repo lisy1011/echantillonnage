@@ -1,1 +1,0 @@
-mongoimport --db "tp3" --collection "membres"  --drop --file "C:\bd_jeu_des_donnees.json"

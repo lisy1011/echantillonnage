@@ -1,1 +1,0 @@
-mongoimport --db "data-collections" --collection "membres" --file "jeu_de_donnees.json"
