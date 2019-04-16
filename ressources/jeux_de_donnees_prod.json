@@ -390,4 +390,111 @@
 		"$numberInt": "2"
 	}
 }
+{
+    "_id": 3,
+    "nom_util": "marc",
+    "courriel": "marc@gmail.com",
+    "collections_crees": [
+        {
+            "_id": 4,
+            "nom": "papillons",
+            "partagee_avec": [
+                2
+            ],
+            "lieux": [
+                {
+                    "_id": 11,
+                    "nom": "Chenille de terre",
+                    "infos": "Les ailes ont une envergure variant entre 34 et 48 mm1, les points noirs y sont parfois absents",
+                    "coordonnees": [
+                        {
+                            "latitude": 46.735672483895804,
+                            "longitude": -72.77250883591591
+                        },
+                        {
+                            "latitude": 46.73554380326947,
+                            "longitude": -72.77233181012093
+                        },
+                        {
+                            "latitude": 46.735378356298696,
+                            "longitude": -72.77206895363747
+                        },
+                        {
+                            "latitude": 46.73523496851343,
+                            "longitude": -72.77190265667855
+                        },
+                        {
+                            "latitude": 46.73506216734255,
+                            "longitude": -72.77166125786721
+                        },
+                        {
+                            "latitude": 46.734793772936655,
+                            "longitude": -72.77139840138375
+                        },
+                        {
+                            "latitude": 46.73456214381388,
+                            "longitude": -72.77122137558877
+                        },
+                        {
+                            "latitude": 46.73427904020164,
+                            "longitude": -72.77094779026925
+                        }
+                    ],
+                    "date_creation": {
+                        "ISODate": "2019-04-10"
+                    },
+                    "type_lieu": "itineraire"
+                }
+            ]
+        }
+    ],
+    "lieux_non_classes": [
+        {
+            "_id": 12,
+            "nom": "Amaryllis",
+            "infos": "de taille moyenne de couleur orange vif sur le dessus des ailes avec une épaisse bordure brun foncé et à l'apex des antérieures",
+            "coordonnees": [
+                {
+                    "latitude": 46.73145895295559,
+                    "longitude": -72.7709746123594
+                },
+                {
+                    "latitude": 46.7317714861872,
+                    "longitude": -72.76858744633614
+                },
+                {
+                    "latitude": 46.730730927346116,
+                    "longitude": -72.76814219963967
+                },
+                {
+                    "latitude": 46.73207298711781,
+                    "longitude": -72.76888785374581
+                }
+            ],
+            "date_creation": {
+                "ISODate": "2019-03-08"
+            },
+            "type_lieu": "ensemble_points"
+        }
+    ],
+    "collections_invite": [
+        {
+            "id_createur": 1,
+            "id_collection": 1
+        },
+        {
+            "id_createur": 1,
+            "id_collection": 2
+        },
+        {
+            "id_createur": 2,
+            "id_collection": 5
+        }
+    ],
+    "mot_passe": "marc123",
+    "__v": 3
+}
+
+
+
 
