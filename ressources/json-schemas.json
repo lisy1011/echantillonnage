@@ -1,11 +1,9 @@
 {
    "jsonSchemaLieux" :
     {
-       
             "type" : "object",  
-            "properties":{
-			             		
-							"id":{"type":"number"},
+            "properties":{	
+							"_id":{"type":"number"},
 							"nom":{"type":"string"},
 							"infos":{"type":"string"},
 							"coordonnees":{																             
@@ -25,7 +23,7 @@
 										}
 																				 
 						  },													   
-			"required": ["id", "nom", "coordonnees", "date_creation","type_lieu"]																															                             
+			"required": ["_id", "nom", "coordonnees", "date_creation","type_lieu"]																															                             
     },
 	
 	"jsonSchemaTabLieux" :
@@ -36,7 +34,7 @@
                  "type" : "object",  
                  "properties":{
 			             		
-							"id":{"type":"number"},
+							"_id":{"type":"number"},
 							"nom":{"type":"string"},
 							"infos":{"type":"string"},
 							"coordonnees":{																             
@@ -56,17 +54,17 @@
 										}
 																				 
 						  },													   
-			"required": ["id", "nom", "coordonnees", "date_creation","type_lieu"]
+			"required": ["_id", "nom", "coordonnees", "date_creation","type_lieu"]
                        }			
     },
 	
-	"jsonSchemaCollections" :
+	"jsonSchemaCollectionsCrees" :
         {[{
             "type" : "object",
             "items" : {
                 "type" : "object",
                 "properties" : {
-				                "id": { "type": "number" },
+				                "_id": { "type": "number" },
                                 "nom": { "type" : "string" },
                                 "partagee_avec":{
 								                 "type" : "array",
@@ -97,26 +95,26 @@
 																			 }
 																 
 												                },
-													"required": ["id", "nom", "coordonnees", "date_creation"]
+													"required": ["id", "nom", "coordonnees", "date_creation", "type_lieu"]
 																
 											      }								
 								        }
                
                                 },
-			    "required": ["id", "nom"]
+			    "required": ["_id", "nom"]
 			}
 			 
-        }}],
+        }]},
 	
 
 
-    "jsonSchemaTabCollections" :
+    "jsonSchemaTabCollectionsCrees" :
         {
             "type" : "array",
             "items" : {
                 "type" : "object",
                 "properties" : {
-				                "id": { "type": "number" },
+				                "_id": { "type": "number" },
                                 "nom": { "type" : "string" },
                                 "partagee_avec":{
 								                 "type" : "array",
@@ -153,35 +151,32 @@
 								        }
                
                                 },
-			    "required": ["id", "nom"]
+			    "required": ["_id", "nom"]
 			}
 			 
         },
 	
-    "jsonSchemaTabCollectionPartagee" :
+    "jsonSchemaTabCollectionsInvitees" :
     {
-	        "type" : "object",
-            "properties" : {
-			                "id":{"type":"number"},
-							"nom":{ "type" : "string" },
-							"partagee_avec":{
-								                 "type" : "array",
-                                                 "items" : {"type" : "number"}					        
-                                            }
-			                }
-			"required": ["id","nom","partagee_avec"]       
+	        "type" : "array",
+					 "items" : {
+						"type" : "object",
+						"properties" : {
+			                "id_createur":{"type":"number"},
+							"id_collection":{"type":"number"}
+			                }}
+			"required": ["id_createur","id_collection"]       
 	}
 
 	"jsonSchema_post_membres" :
     {  
             "type" : "object",
             "properties" : {
-                "id": { "type": "number" },
+                "_id": { "type": "number" },
 				"nom_util": { "type" : "string" },
-                "courriel": { "type" : "string" } ,
-  
+                "courriel": { "type" : "string" } 
             },
-            "required": ["id","nom_util","courriel"]       
+            "required": ["nom_util","courriel"]       
     },
 		
 	
@@ -189,13 +184,14 @@
     {  
             "type" : "object",
             "properties" : {
-                "id": { "type": "number" },
+                "_id": { "type": "number" },
 				"nom_util": { "type" : "string" },
                 "courriel": { "type" : "string" } ,
-                "collections": { "type" : "array" } ,
+                "collections_crees": { "type" : "array" } ,
                 "lieux_non_classes": { "type" : "array" } ,
-				"collectionsPartagees": { "type" : "array" } 
+				"collections_invitees": { "type" : "array" } 
             },
-            "required": ["id","nom_util","courriel"]       
+            "required": ["_id","nom_util","courriel"]       
     },
 		
+}
