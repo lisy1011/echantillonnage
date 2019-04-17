@@ -7,7 +7,7 @@ var ObjectID = require('mongodb').ObjectID;
 // ORM Mongoose.
 var mongoose = require('mongoose');
 // Connexion à MongoDB avec Mongoose.
-mongoose.connect('mongodb://localhost:27017/data-collections', {
+mongoose.connect('mongodb://localhost:27017/jeu_de_donnees', {
     //useMongoClient: true,
     useNewUrlParser: true,
     poolSize: 10
@@ -450,7 +450,6 @@ MembreModel.findById(req.params.mem_id, function (err, membre) {
 
     // Méthode HTTP non permise
     .all(function (req, res) {
-        'use strict';
         console.log('Méthode HTTP non permise.');
         res.status(405).end();
     });
@@ -651,7 +650,7 @@ routerApi.route('/membres/:mem_id/collections')
     //d'un membre identifié par son id.
     
     .get(function (req, res) {
-
+        console.log('Accès non autorisé');
          //Vérification des accès
    if (req.params.mem_id !== req.jeton.membre_id)
    {
@@ -761,7 +760,6 @@ routerApi.route('/membres/:mem_id/collections')
     })
     // Méthode HTTP non permise
     .all(function (req, res) {
-        'use strict';
         console.log('Méthode HTTP non permise.');
         res.status(405).end();
     });
@@ -1007,7 +1005,6 @@ routerApi.route('/membres/:mem_id/collections/:col_id/partageAvec/:mem_invite_id
     })
     // Méthode HTTP non permise
     .all(function (req, res) {
-        'use strict';
         console.log('Méthode HTTP non permise.');
         res.status(405).end();
     });

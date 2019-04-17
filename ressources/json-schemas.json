@@ -1,10 +1,8 @@
 {
    "jsonSchemaLieux" :
     {
-       
             "type" : "object",  
-            "properties":{
-			             		
+            "properties":{	
 							"_id":{"type":"number"},
 							"nom":{"type":"string"},
 							"infos":{"type":"string"},
@@ -22,8 +20,7 @@
 							"date_creation":{ "type" : "string" },
 							"type_lieu":{ "type" : "string" 
 										  "enum" : {"point_precis","ensemble_points","itineraire","region_fermee"}
-										}
-																				 
+										}												 
 						  },													   
 			"required": ["_id", "nom", "coordonnees", "date_creation","type_lieu"]																															                             
     },
@@ -56,7 +53,7 @@
 										}
 																				 
 						  },													   
-			"required": ["_id", "nom", "coordonnees", "date_creation","type_lieu"]
+						 "required": ["_id", "nom", "coordonnees", "date_creation","type_lieu"]
                        }			
     },
 	
@@ -97,7 +94,7 @@
 																			 }
 																 
 												                },
-													"required": ["id", "nom", "coordonnees", "date_creation"]
+													"required": ["id", "nom", "coordonnees", "date_creation", "type_lieu"]
 																
 											      }								
 								        }
@@ -106,7 +103,7 @@
 			    "required": ["_id", "nom"]
 			}
 			 
-        }}],
+        }]},
 	
 
 
@@ -166,8 +163,8 @@
 						"properties" : {
 			                "id_createur":{"type":"number"},
 							"id_collection":{"type":"number"}
-			                }}
-			"required": ["id_createur","id_collection"]       
+			                },
+					}	"required": ["id_createur","id_collection"]       
 	}
 
 	"jsonSchema_post_membres" :
@@ -176,8 +173,7 @@
             "properties" : {
                 "_id": { "type": "number" },
 				"nom_util": { "type" : "string" },
-                "courriel": { "type" : "string" } ,
-  
+                "courriel": { "type" : "string" } 
             },
             "required": ["nom_util","courriel"]       
     },
@@ -197,3 +193,4 @@
             "required": ["_id","nom_util","courriel"]       
     },
 		
+}
