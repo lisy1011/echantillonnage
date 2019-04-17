@@ -1,0 +1,93 @@
+{
+	"schemaJsonCollectionMembres" :
+	{
+		"type" : "array",
+		"items" : {
+		"type" : "object",
+            "properties" : {
+				"_id": { "type" : "number" },
+				"nom_util": { "type" : "string" },
+				"courriel": { "type" : "string"},
+				"collections_crees": {
+					"type" : "array",
+					"items" : {
+						"type" : "object",
+						"properties" : {
+							"_id": { "type": "number" },
+							"nom": { "type" : "string" },
+							"partageAvec": {
+								"type" : "array",
+								"items" : { "type" : "number" }
+								},
+							"lieux": {
+								"type" : "array",
+								"items" : {
+									"type" : "object",
+									"properties" : {
+										"_id": { "type": "number" },
+										"nom": { "type" : "string" },
+										"infos": { "type" : "string" },
+										"coordonnees": {
+											"type" : "array",
+											"items" : {
+												"type" : "object",
+												"properties" : {
+													"latitude": { "type": "number" },
+													"longitude": { "type" : "number" }
+												},
+												"required": ["latitude", "longitude"]
+											}
+										},
+										"date_creation": { "type" : "string" },
+										"type_lieu": { "type" : "string", "enum" : ["Point", "itinéraire", "region_fermee", "ensemble_points"] }
+										
+									},
+									"required": ["_id", "nom", "coordonnees", "date_creation", "type_lieu"]
+								}
+							}
+						},
+						"required": ["_id", "nom"]
+					}
+				},
+				"lieux_non_classes" : {
+					"type" : "array",
+					"items" : {
+						"type" : "object",
+						"properties" : {
+							"_id": { "type": "number" },
+							"nom": { "type" : "string" },
+							"commentaire": { "type" : "string" },
+							"date_creation": { "type" : "string" },
+							"type_lieu": { "type" : "string", "enum" : ["Point", "itinéraire", "region_fermee", "ensemble_points"] },
+							"coordonnees": {
+								"type" : "array",
+								"items" : {
+									"type" : "object",
+									"properties" : {
+										"latitude": { "type": "number" },
+										"longitude": { "type" : "number" }
+									},
+									"required": ["latitude", "longitude"]
+								}
+							}
+							
+						},
+						"required": ["_id", "nom", "coordonnees", "date_creation", "type_lieu"]
+					}
+				},
+				"collections_invitees": {
+					"type" : "array",
+					"items" : {
+						"type" : "object",
+						"properties" : {
+							"mem_id": { "type": "number" },
+							"col_id": { "type" : "number" }
+						},
+						"required": ["id_createur","id_collection"]
+					}
+				}
+			},
+			"required": ["_id", "nom_util", "courriel"]
+		}
+	}
+}
