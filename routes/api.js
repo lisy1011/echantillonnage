@@ -2,6 +2,8 @@
 var express = require('express');
 // Router pour l'API REST.
 var routerApi = express.Router();
+var jwt = require('jsonwebtoken');
+var ObjectID = require('mongodb').ObjectID;
 // ORM Mongoose.
 var mongoose = require('mongoose');
 // Connexion à MongoDB avec Mongoose.
@@ -10,69 +12,55 @@ mongoose.connect('mongodb://localhost:27017/jeu_de_donnees', {
     useNewUrlParser: true,
     poolSize: 10
 });
-//==============================
-function recupererCollectionsCrees(res, mem_id, col_id) {
-    var uneCollection=new CollectionCreeModel();
-    // On obtient la collection du membre de la base des données avec seulement les champs nécessaires pour le retour JSON
-    MembreModel.findById(mem_id, function (err, membreInv) {
-        if (err) {
-            console.log('Erreur de la BD lors de la consulation du membre: ' + err);
-            res.status(400).json('Erreur de la BD lors de la consulation du membre: ' + err).end();
-        }
-       
-        if (membreInv !== null ) {
-            for (var i = 0; i < membreInv.collections_crees.length; i++) {
-               
-                if (membreInv.collections_crees[i]._id === parseInt(col_id)) {
-                    var unId=membreInv.collections_crees[i]._id;
-                    uneCollection= membreInv.collections_crees.findById(unId,membreInv.collections_crees[i]);
-                    break;
-                }
-            }
-            membreInv.save(function (err) {
-                if (err) {
-                    console.log('Erreur de la BD lors de la consulation du membre: ' + err);
-                    res.status(400).json('Erreur de la BD lors de la consulation du membre: ' + err).end();
-                }
-            });
+
+// Ajout d'un middleware qui intercepte toutes les requêtes.
+routerApi.use(function (req, res, next) {
+    // Vérification de l'authorisation.
+    verifierAuthentification(req, function (estAuthentifie, jetonDecode) {
+        if (!estAuthentifie) {
+            // Utilisateur NON authentifié.
+            res.status(401).end();
         } else {
-            console.log('Erreur de la BD lors de la consulation du membre: ' + err);
-            res.status(400).json('Erreur de la BD lors de la consulation du membre: ' + err).end();
+            // Utilisateur authentifié.
+            // Sauvegarde du jeton décodé dans la requête pour usage ultérieur.
+            req.jeton = jetonDecode;
+            // Pour le déboggage.
+           // console.log("Jeton : " + JSON.stringify(jetonDecode));
+            // Poursuite du traitement de la requête.
+            next();
         }
     });
-    return uneCollection;
-}
+});
 
 
 
-//============================
-// Modèle Mongoose pour les Coordonnées du lieu choisi.
+// Modèle Mongoose concernant les Coordonnées d'un.
 var CoordonneeModel = require('../models/membreModel').CoordonneeModel;
 
-// Modèle Mongoose pour le Lieu (y compris lieu sans collection).
+// Modèle Mongoose concernant un Lieu.
 var LieuModel = require('../models/membreModel').LieuModel;
 
-// Modèle Mongoose pour les collections crées.
+// Modèle Mongoose pour une collection crée.
 var CollectionCreeModel = require('../models/membreModel').CollectionCreeModel;
 
-// Modèle Mongoose pour les Collections dont on a reçu le partage.
-var CollectionInviteeModel = require('../models/membreModel').CollectionInviteeSchema;
+// Modèle Mongoose concernant une collection invité.
+var CollectionInviteModel = require('../models/membreModel').CollectionInviteModel;
 
 // Modèle Mongoose pour le Membre.
 var MembreModel = require('../models/membreModel').MembreModel;
 
-// Modèle Mongoose pour le compteur.
+// Modèle Mongoose concernant un comteur.
 var CompteurModel = require('../models/compteurModel').CompteurModel;
 
-const COMPTEUR_ID_MEMBRE = 0;
-//const COMPTEUR_ID_COLLECTION = 1;
-const COMPTEUR_ID_LIEU = 2;
+var MEMBRE_CPT_ID = 0;
+var COLL_CPT_ID = 1;
+var LIEU_CPT_ID = 2;
 
 
 // Ajout d'un middleware qui intercepte toutes les requêtes;
-// exécuté lors de chaque requête faite à l'API.
+// exécutées lors de chaque requête faite à l'API.
 routerApi.use(function (req, res, next) {
-    'use strict';
+    
     // Log de chaque requête faite à l'API.
     console.log(req.method, req.url);
     // On pourrait valider le jeton d'accès ici !
@@ -81,144 +69,147 @@ routerApi.use(function (req, res, next) {
     next();
 });
 
-// Racine de l'API.
+
+
+
+//Racine de l'API.
 routerApi.get('/', function (req, res) {
+
     res.statusCode = 200;
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.end('L\'API fonctionne bien !');
 });
 
-// Route désignant un certain Membre 
-// ==================================
+//*********************************************** */
+//*******************Membres********************* */
+//*********************************************** */
 
-    // Creation d'un certain lieu.
-    routerApi.route('/membres')
-
-    // Récupération de tous les pokémons.
+//Route pour retourner ou enregistrer
+//un certain membre
+//============================
+routerApi.route('/membres/:noMem')
     .get(function (req, res) {
-        console.log('Récupération de tous les membres.');
-
-        MembreModel.find({}, function (err, membres) {
-            if (err) throw err;
-            res.json(membres);
-        
-        });
-    });
-
-    routerApi.route('/membres/:noMem')
-    .get(function (req, res) {
+        //Vérification des accès
+        if (req.params.noMem !== req.jeton.membre_id)
+        {
+        console.log('Accès non autorisé');
+        res.status(401).end();
+        return;
+        }
         //verification du membre
-       // if (req.params.noMem === req.decoded._id) {
-            // Tentative de récupération du membre concerné.            
-            MembreModel.findById(req.params.noMem).select('-__v -mot_passe').exec(function (err, membre) {
-                if (err) {
-                    console.log('Erreur, lors de consultation de la base de données.');
-                    res.status(400).end();
-                    return;
-                }
+        // Récuperation du membre en question.            
+        MembreModel.findById(req.params.noMem).select('-__v -mot_passe').exec(function (err, membre) {
+            if (err) {
+                console.log('Erreur, en consultant la base de données.');
+                res.status(400).end();
+                return;
+            }
 
-                if (membre === null) {
-                    console.log("Le membre no." + req.params.noMem + " n'existe pas dans la base de données.");
-                    res.status(404).json("Le membre no." + req.params.noMem + " n'existe pas dans la base de données.").end();
-                    return;
-                } else {
-                    //Si le membre existe
-                    res.location(req.protocol + '://' + req.get('host') + req.originalUrl);
-                    res.json(membre);
-                }
-            });
-       /*   } else {
-            res.status(405).json("Erreur, Vous n'avez pas acces.").end();
-            return;
-        }  */
+            if (membre === null) {
+                console.log("Le membre no." + req.params.noMem + " n'existe pas dans la base de données.");
+                res.status(404).json("Le membre no." + req.params.noMem + " n'existe pas dans la base de données.").end();
+                return;
+            } else {
+                //Si le membre existe
+                res.json(membre);
+            }
+        });
     })
-// Création d'un nouveau membre.
-.post(function (req, res) {
-
-    console.log('Creation d\'un nouveau membre');
-
-    if (req.body.nom_util === null || req.body.courriel === null || req.body.mot_passe === null) {
-        console.log("Erreur, données manquantes. 'nom_utilisateur', 'courriel' et 'mot_passe' sont obligatoires");
-        res.status(400).end();
+    // Création d'un nouveau membre.
+    .post(function (req, res) {
+        //Vérification des accès
+        if (req.params.noMem !== req.jeton.membre_id)
+        {
+        console.log('Accès non autorisé');
+        res.status(401).end();
         return;
-    }
+        }
+        console.log("Creation d'un nouveau membre");
 
-    if (typeof (req.body.nom_utilisateur) === 'undefined' || typeof (req.body.courriel) === 'undefined' || typeof (req.body.mot_passe) === 'undefined') {
-        console.log("Erreur, données manquantes. 'nom_utilisateur', 'courriel' et 'mot_passe' sont obligatoires");
-        res.status(400).end();
-        return;
-    }
-
-    if (req.body.nom_utilisateur.trim().length === 0 || req.body.courriel.trim().length === 0 || req.body.mot_passe.trim().length === 0) {
-        console.log("Erreur, données manquantes. 'nom_utilisateur', 'courriel' et 'mot_passe' ne peuvent pas etre vides");
-        res.status(400).end();
-        return;
-    }
-
-    // On verifie si le membre existe deja
-    MembreModel.findOne({
-        'nom_util': req.body.nom_utilisateur
-    }, function (err, memReponse) {
-        // Si le nom dèutilisateur existe deja dans la base des donnees, on retourne un erreur.
-        if (memReponse !== null) {
-            console.log("Erreur, membre existant");
+        if (req.body.mot_passe === null || req.body.courriel === null ||req.body.nom_util === null ) {
+            console.log("Erreur, nom, mot de passe et courriel sont requis.");
             res.status(400).end();
             return;
         }
-        var membre = new MembreModel();
-        // On met l'ID du membre à zéro par default
-        membre._id = 0;
-        CompteurModel.findByIdAndUpdate({
-            _id: COMPTEUR_ID_MEMBRE
-        }, {
-            $inc: {
-                seq: 1
-            }
-        }, {
-            "upsert": true,
-            "new": true
-        }, function (err, counter) {
-            if (err) {
-                console.log("Erreur de base des données pour la gestion du compteurs COMPTEUR_ID_MEMBRE: " + err);
+
+        
+
+        if (req.body.nom_util.trim().length === 0 || req.body.courriel.trim().length === 0 || req.body.mot_passe.trim().length === 0) {
+            console.log("Erreur, nom,courriel et mot de passe doivent être re");
+            res.status(400).end();
+            return;
+        }
+         
+
+        if (typeof (req.body.nom_util) === 'undefined' || typeof (req.body.courriel) === 'undefined' || typeof (req.body.mot_passe) === 'undefined') {
+            console.log("Erreur, nom, mot de passe et courriel sont requis.");
+            res.status(400).end();
+            return;
+        }
+        // On verifie si le membre existe deja
+        MembreModel.findOne({
+            'nom_util': req.body.nom_util
+        }, function (err, memReponse) {
+            // Si le nom dèutilisateur existe deja dans la base des donnees, on retourne un erreur.
+            if (memReponse !== null) {
+                console.log("Erreur, membre existant");
                 res.status(400).end();
                 return;
             }
-            // Si le compteur est nul ça veut dire que c'est la première fois
-            // qu'on l'utilise, donc on doit l'initialiser.    
-            if (counter === null) {
-                counter = new CompteurModel();
-                counter._id = COMPTEUR_ID_MEMBRE;
-                counter.seq = 1;
-                counter.save(function (err) {
-                    if (err) {
-                        console.log("Erreur de base des donnees pour la creation du compteur COMPTEUR_ID_MEMBRE: " + err);
-                        res.status(400).end();
-                        return;
-                    }
+            var membre = new MembreModel();
+            // On met l'ID du membre à zéro par default
+            membre._id = 0;
+            CompteurModel.findByIdAndUpdate({
+                _id: MEMBRE_CPT_ID
+            }, {
+                $inc: {
+                    seq: 1
+                }
+            }, {
+                "upsert": true,
+                "new": true
+            }, function (err, cpt) {
+                if (err) {
+                    console.log("Erreur de base des données pour la gestion du compteurs COMPTEUR_ID_MEMBRE: " + err);
+                    res.status(400).end();
+                    return;
+                }
+                // Si le compteur est nul ça veut dire que c'est la première fois
+                // qu'on l'utilise, donc on doit l'initialiser.    
+                if (cpt === null) {
+                    cpt = new CompteurModel();
+                    cpt._id = MEMBRE_CPT_ID;
+                    cpt.seq = 1;
+                    cpt.save(function (err) {
+                        if (err) {
+                            console.log("Erreur de base des donnees pour la creation du compteur COMPTEUR_ID_MEMBRE: " + err);
+                            res.status(400).end();
+                            return;
+                        }
+                    });
+                }
+                // On assigne l'ID du membre selon la dernière séquence du compteur MEMBRE
+                membre._id = cpt.seq;
+            });
+            membre.nom_util = req.body.nom_util;
+            membre.courriel = req.body.courriel;
+            membre.mot_passe = req.body.mot_passe;
+            // On enregistre le nouveau membre dans la base des données
+            membre.save(function (err) {
+                if (err) {
+                    console.log("Erreur lors de la création du membre: " + err);
+                    res.status(400).end();
+                    return;
+                }
+                // On obtient le membre de la base des données avec seulement les champs nécessaires pour le retour JSON
+                MembreModel.findById(membre._id).select('-collections -col_ext_accessibles -lieux_non_classes -__v -mot_passe').exec(function (err, memReponse) {
+                    res.location(req.protocol + '://' + req.get('host') + req.originalUrl + membre._id);
+                    res.status(201).json(memReponse);
+                    return;
                 });
-            }
-            // On assigne l'ID du membre selon la dernière séquence du compteur MEMBRE
-            membre._id = counter.seq;
-        });
-        membre.nom_utilisateur = req.body.nom_utilisateur;
-        membre.courriel = req.body.courriel;
-        membre.mot_passe = req.body.mot_passe;
-        // On enregistre le nouveau membre dans la base des données
-        membre.save(function (err) {
-            if (err) {
-                console.log("Erreur lors de la création du membre: " + err);
-                res.status(400).end();
-                return;
-            }
-            // On obtient le membre de la base des données avec seulement les champs nécessaires pour le retour JSON
-            MembreModel.findById(membre._id).select('-collections -col_ext_accessibles -lieux_non_classes -__v -mot_passe').exec(function (err, memReponse) {
-                res.location(req.protocol + '://' + req.get('host') + req.originalUrl + membre._id);
-                res.status(201).json(memReponse);
-                return;
             });
         });
-    });
-})
+    })
 
     //Méthode HTTP non permise
     .all(function (req, res) {
@@ -226,165 +217,235 @@ routerApi.get('/', function (req, res) {
         res.status(405).end();
     });
 
- 
 
-// Route pour créer ou consulter les lieux 
-// ==================================
-// Route pour créer ou consulter les lieux 
-// ==================================
+//**************************************************** */
+//***********************Lieux************************ */
+//**************************************************** */
+
+//Permet à un membre ayant "<"mem_id" pour identifiant
+// de créer la ressource "lieux_non_classes"
 routerApi.route('/membres/:mem_id/lieux_non_classes')
-
     // Création d'un nouveau lieu.
     .post(function (req, res) {
-
-      //  if (req.params.mem_id ===req.decoded._id) {
-            console.log('Création d\'un nouveau lieu');
-
-            MembreModel.findById(req.params.mem_id, function (err, membre) {
+   //Vérification des accès
+   if (req.params.mem_id !== req.jeton.membre_id)
+   {
+   console.log('Accès non autorisé');
+   res.status(401).end();
+   return;
+   }
+    //Récupération du membre concerné:
+    MembreModel.findById(req.params.mem_id, function (err, membre) {
+            if (err) {
+                console.log("Erreur en consultant le membre " + req.params.mem_id + ": " + err);
+                res.status(400).end();
+                return;
+            }
+            //Si le membre est null
+            if (membre === null) {
+                console.log("Erreur lors de la creation du lieu, Membre " + req.params.mem_id + " inexistant: " + err);
+                res.status(400).end();
+                return;
+            }
+            //Si le membre existe, on crée le lieu:
+            var lieu = new LieuModel();
+            lieu._id = 0;
+            CompteurModel.findByIdAndUpdate({ _id: LIEU_CPT_ID},
+                {$inc: {seq: 1}}, {"upsert": true,"new": true}, function (err, cpt) {
                 if (err) {
-                    console.log("Erreur lors de la consultation du Membre " + req.params.mem_id + ": " + err);
-                    res.status(400).end();
-                    return;
-                }
-                if (membre === null) {
-                    console.log("Erreur lors de la creation du lieu, Membre " + req.params.mem_id + " inexistant: " + err);
+                    console.log("Erreur de gestion du compteur des id des lieux: " + err);
                     res.status(400).end();
                     return;
                 }
 
-                var lieu = new LieuModel();
-                lieu._id = 0;
-                CompteurModel.findByIdAndUpdate({
-                    _id: COMPTEUR_ID_LIEU
-                }, {
-                    $inc: {
-                        seq: 1
-                    }
-                }, {
-                    "upsert": true,
-                    "new": true
-                }, function (err, counter) {
-                    if (err) {
-                        console.log("Erreur de base des données pour la gestion du compteur COMPTEUR_ID_LIEU: " + err);
-                        res.status(400).end();
-                        return;
-                    }
-
-                    // Si le compteur est nul ça veut dire que c'est la première fois qu'on l'utilise,
-                    // donc on doit l'initialiser    
-                    if (counter === null) {
-                        counter = new CompteurModel();
-                        counter._id = COMPTEUR_ID_LIEU;
-                        counter.seq = 1;
-                        counter.save(function (err) {
-                            if (err) {
-                                console.log("Erreur de base des données pour la création du compteur COMPTEUR_ID_LIEU: " + err);
-                                res.status(400).end();
-                                return;
-                            }
-                        });
-                    }
-
-                    // On assigne l'ID du membre selon la dernière séquance du compteur LIEU
-                    lieu._id = counter.seq;
-                    lieu.nom = req.body.nom;
-                    lieu.date_creation = req.body.date_creation;
-                    lieu.type_lieu = req.body.type_lieu;
-
-                    for (var coord in req.body.coordonnees) {
-                        var coordonnee = new CoordonneeModel();
-                        coordonnee.latitude = req.body.coordonnees[coord].latitude;
-                        coordonnee.longitude = req.body.coordonnees[coord].longitude;
-                        lieu.coordonnees.push(coordonnee);
-                    }
-
-                    if (req.body.infos !== null) {
-                        lieu.infos = req.body.infos;
-                    }
-
-                    membre.lieux_non_classes.push(lieu);
-                    membre.save(function (err) {
+                //Initialisation du compteur s'il est null    
+                if (cpt === null) {
+                    cpt = new CompteurModel();
+                    cpt._id = LIEU_CPT_ID;
+                    cpt.seq = 1;
+                    cpt.save(function (err) {
                         if (err) {
-                            console.log("Erreur de base des données lors de la creation du lieu: " + err);
+                            console.log("Erreur de de création du compteur du id du lieu: " + err);
                             res.status(400).end();
                             return;
                         }
-                     //   res.location(req.protocol + '://' + req.get('host') + req.originalUrl + "/" + lieu._id);
-                        res.status(201).json(lieu);
                     });
-
-                });
-            });
-       /*  } else {
-            res.status(405).json("Erreur, Vous n'avez pas acces.").end();
-            return;
-        } */
-    });
-
-
-//================================================
-// Route pour supprimer un lieu particulier 
-// ===============================================
-routerApi.route('/membres/:mem_id/lieux_non_classes/:lieu_id')
-    .delete(function (req, res) {
-        
-      //  if (req.params.mem_id === req.decoded._id) {
-            // Tentative de récupération du membre concerné.
-            MembreModel.findById(req.params.mem_id, function (err, membre) {
-                if (err) {
-                    console.log('Erreur, ce membre n\'existe pas');
-                    res.status(400).end();
                 }
-                //Si le membre existe
-                if (membre !== null) {
-                    var lieuTrouve = false;
-                    var mesLieux = membre.lieux_non_classes;
-                    for (var i = 0; i < mesLieux.length; i++) {
-                        if (mesLieux[i]._id === parseInt(req.params.lieu_id)) {
-                            membre.lieux_non_classes.remove(mesLieux[i]);
-                            lieuTrouve = true;
-                            break;
-                        }
-                    }
-
-                    if (lieuTrouve === false) {
-                        var mesCollections = membre.collections;
-                        for (var j = 0; j < mesCollections.length; j++) {
-                            var mesLieuxCol = mesCollections[j].lieux;
-                            for (var k = 0; k < mesLieuxCol.length; k++) {
-                                if (mesLieuxCol[k]._id === parseInt(req.params.lieu_id)) {
-                                    membre.collections[j].lieux.remove(mesLieuxCol[k]);
-                                    lieuTrouve = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-
-                    if (lieuTrouve) {
-                        MembreModel.findByIdAndUpdate(req.params.mem_id, membre, function (err) {
-                            if (err) {
-                                console.log('Erreur lors de l\'enregistrement du membre :' + err);
-                                res.status(400).end();
-                                return;
-                            }
-                            res.status(204).end();
-                        });
-                    } else {
-                        console.log('Erreur lors de l\'effacement du lieu. Lieu ' + req.params.lieu_id + ' non trouvé dans le membre ' + req.params.mem_id);
-                        res.status(400).end();
-                        return;
-                    }
-                } else {
-                    console.log('Le membre no. ' + req.params.mem_id + "  n'existe pas");
+                // Pas d'erreurs dans la création
+                //Affectation des valeur aux attributs
+                //des lieux
+                lieu._id = cpt.seq;
+                //Le nom du lieu est obligatoire:
+                if (req.body.nom === null ) {
+                    console.log("Erreur, le nom est obligatoire.");
                     res.status(400).end();
                     return;
                 }
+                lieu.nom = req.body.nom;
+                lieu.date_creation = req.body.date_creation;
+                lieu.type_lieu = req.body.type_lieu;
+                lieu.infos = req.body.infos;
+                //Parcours des coordonnées du body
+                //et remplissage du tableau des coordonnées.
+                for (var coord in req.body.coordonnees) {
+                    var coordonnee = new CoordonneeModel();
+                    coordonnee.latitude = req.body.coordonnees[coord].latitude;
+                    coordonnee.longitude = req.body.coordonnees[coord].longitude;
+                    lieu.coordonnees.push(coordonnee);
+                }
+
+               //Enregistrement du lieu:
+                membre.lieux_non_classes.push(lieu);
+                membre.save(function (err) {
+                    if (err) {
+                        console.log("Erreur de base des données lors de la creation du lieu: " + err);
+                        res.status(400).end();
+                        return;
+                    }
+        
+                    res.status(201).json(lieu);
+                });
+
             });
-       /*  } else {
-            res.status(405).json("Erreur, Vous n'avez pas acces.").end();
-            return;
-        } */
+        });
+       
+    });
+
+//Permet Permet à un membre ayant <mem_id> pour identifiant de détruire
+// la ressource "lieux" ayant "lieu_id" comme identifiant
+//qu'il soit un lieu classé ou non.
+routerApi.route('/membres/:mem_id/lieux_non_classes/:lieu_id')
+    .delete(function (req, res) {
+      
+        //Vérification des accès
+   if (req.params.mem_id !== req.jeton.membre_id)
+   {
+   console.log('Accès non autorisé');
+   res.status(401).end();
+   return;
+   }
+        // Récuppération  du membre .
+        MembreModel.findById(req.params.mem_id, function (err, membre) {
+            if (err) {
+                console.log('Erreur, ce membre n\'existe pas');
+                res.status(400).end();
+            }
+            //Si le membre existe
+            if (membre !== null) {
+
+                var lieuExiste = false;
+                var mesLieux = membre.lieux_non_classes;
+                for (var i = 0; i < mesLieux.length; i++) {
+                    //Suppression du lieu s'il correspond à
+                    //celui trouvé (avec le paramètre lieu_id)
+                    if (mesLieux[i]._id === parseInt(req.params.lieu_id)) {
+                        membre.lieux_non_classes.remove(mesLieux[i]);
+                        lieuExiste = true;
+                        break;
+                    }
+                }
+                //Si le lieu n'existe pas dans la liste
+                //des lieux non classés, on parcours les
+                //lieux des collections.
+                if (lieuExiste === false) {
+                    var collections = membre.collections_crees;
+                    for (var j = 0; j < collections.length; j++) {
+                        var lieuDeColl = collections[j].lieux;
+                        for (var k = 0; k < lieuDeColl.length; k++) {
+                            //Le lieu est trouvé dans la collection, on
+                            //le supprime
+                            if (lieuDeColl[k]._id === parseInt(req.params.lieu_id)) {
+                                membre.collections_crees[j].lieux.remove(lieuDeColl[k]);
+                                lieuExiste = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                //Le lieu est trouvé , supprimé
+                //on enregistre les modifications
+                if (lieuExiste) {
+                    MembreModel.findByIdAndUpdate(req.params.mem_id, membre, function (err) {
+                        if (err) {
+                            console.log('Erreur de modification des données du membre :' + err);
+                            res.status(400).end();
+                            return;
+                        }
+                        res.status(204).end();
+                    });
+                } else {
+                    console.log('Erreur en tentant d\'effacer le lieu ' + req.params.lieu_id);
+                    res.status(400).end();
+                    return;
+                }
+            } else {
+                console.log(req.params.mem_id +'est un numéro d\'un membre innexistant');
+                res.status(400).end();
+                return;
+            }
+        });
+    })
+
+//Route pour enlever un lieu d'une collection et le rendre
+//non classé.
+.put(function (req, res) {
+        
+ //Vérification des accès
+ if (req.params.mem_id !== req.jeton.membre_id)
+ {
+ console.log('Accès non autorisé');
+ res.status(401).end();
+ return;
+ }
+ // Récupération du membre en question:
+MembreModel.findById(req.params.mem_id, function (err, membre) {
+    if (err) {
+        console.log('Erreur, ce membre n\'existe pas');
+        res.status(404).end();
+             }
+      //Si le membre existe
+       if (membre !== null) {
+      //Le lieu à mettre non classé
+      var lieuSansCollection = null;
+      //Parcourir les collections pour voir
+      //si le lieu passé en paramètres
+      //existe dans les collections
+      for (var i = 0; i < membre.collections_crees.length; i++) {
+                    //Parcourir les lieux de la collection
+                    for (var j = 0; j < membre.collections_crees[i].lieux.length; j++) {
+                        if (membre.collections_crees[i].lieux[j]._id === parseInt(req.params.lieu_id)) {
+                            lieuSansCollection = membre.collections_crees[i].lieux[j];
+                            //Enregistrement du lieu dans la liste des non classés:
+                            membre.lieux_non_classes.push(lieuSansCollection);
+                            //Suppression du lieu de la collection initiale:
+                            membre.collections_crees[i].remove(lieuSansCollection);
+                            break;
+                        }
+                    }
+                }
+
+                if (lieuSansCollection === null) {
+                    console.log("Le lieu n'\existe pas");
+                    res.status(404).end();
+                    return;
+                }
+                //Sauvegarde des modifications:
+                membre.save(function (err) {
+                    if (err) {
+                        console.log("Erreur lors de la sauvegarde des modifications du lieu: " + err);
+                        res.status(400).end();
+                        return;
+                    }
+                    //   res.location(req.protocol + '://' + req.get('host') + req.originalUrl + "/" + lieu._id);
+                    res.status(201).json(lieuSansCollection);
+                });
+
+            } else {
+                console.log(req.params.mem_id +'est un numéro d\'un membre qui n\'existe pas');
+                res.status(404).end();
+            }
+
+        });
     })
 
     // Méthode HTTP non permise
@@ -393,166 +454,21 @@ routerApi.route('/membres/:mem_id/lieux_non_classes/:lieu_id')
         res.status(405).end();
     });
 
-//Route pour enlever un lieu d'une collection et le rendre
-//non classé.
-routerApi.route('/membres/:mem_id/lieux_non_classes/:lieu_id')
-.put(function (req, res) {
-    //'use strict';
-    //Vérification si le membre a les accès:
-    //if (req.params.mem_id === req.decoded._id) {
-        // Tentative de récupération du membre concerné.
-        MembreModel.findById(req.params.mem_id, function (err, membre) {
-            if (err) {
-                console.log('Erreur, ce membre n\'existe pas');
-                res.status(400).end();
-            }
-            //Si le membre existe
-            if (membre !== null) {
-                //Le lieu à mettre non classé
-                var lieuSansCollection = null;
-                //Parcourir les collections:
-                for (var i = 0; i < membre.collections_crees.length; i++) {
-                //Parcourir les lieux de la collection
-                for (var j = 0; j < membre.collections_crees[i].lieux.length; j++) {
-                    if (membre.collections_crees[i].lieux[j]._id === parseInt(req.params.lieu_id)) {
-                        lieuSansCollection = membre.collections_crees[i].lieux[j];
-                       //Enregistrement du lieu dans la liste des non classés:
-                        membre.lieux_non_classes.push(lieuSansCollection);
-                        //Suppression du lieu de la collection initiale:
-                        membre.collections_crees[i].remove(lieuSansCollection);
-                        break;
-                    }
-                }
-            }
 
-                if (lieuSansCollection === null || typeof (lieuSansCollection) === 'undefined') {
-                    console.log("Erreur, ce lieu n'\existe pas");
-                    res.status(400).end();
-                    return;
-                }
-
-               //membre.lieux_non_classes.push(lieuSansCollection);
-                //membre.collections_crees.remove(lieuSansCollection);
-               membre.save(function (err) {
-               // MembreModel.findByIdAndUpdate(req.params.mem_id, membre, function (err) {
-                    if (err) {
-                        console.log("Erreur de base des données lors de la modification du lieu: " + err);
-                        res.status(400).end();
-                        return;
-                    }
-                 //   res.location(req.protocol + '://' + req.get('host') + req.originalUrl + "/" + lieu._id);
-                    res.status(201).json(lieuSansCollection);
-                });
-               
-            } else {
-                console.log('Le membre no. ' + req.params.mem_id + "  n'existe pas");
-                res.status(404).end();
-            }
-
-        });
-   /*  } else {
-        res.status(405).json("Erreur, Vous n'avez pas acces.").end();
-        return;
-    } */
-})
-
-// Méthode HTTP non permise
-.all(function (req, res) {
-    console.log('Méthode HTTP non permise.');
-    res.status(405).end();
-});
-
-
-
-//Route pour ajouter un lieu à une collection
-/* routerApi.route('/membres/mem_id/collections/:collection_id/lieux/lieu_id')
-.put(function (req, res) {
-    'use strict';
-//Vérification si le membre a les accès:
-    //if (req.params.mem_id === req.decoded._id) {
-        // Tentative de récupération du membre concerné.
-        MembreModel.findById(req.params.mem_id, function (err, membre) {
-            if (err) {
-                console.log('Erreur, ce membre n\'existe pas');
-                res.status(400).end();
-            }
-            //Si le membre existe
-            if (membre !== null) {
-                //Vérification si la collection existe:
-                var uneCollection = null;
-               
-                //Parcourir les collections:
-                for (var i = 0; i < membre.collections_crees.length; i++) {
-                //Parcourir les collections du membres
-                if(membre.collections_crees[i]._id===parseInt(req.params.collection_id)){
-                 uneCollection=membre.collections_crees[i];
-                 break;
-                }
-                
-            }
-
-                if (uneCollection === null || typeof (uneCollection) === 'undefined') {
-                    console.log("Erreur, cette collection n'\existe pas");
-                    res.status(400).end();
-                    return;
-                }
-
-               //Vérification si le lieu existe:
-               //Parcourir les lieux non classés:
-               var unLieu=null;
-               for (var j = 0; j < membre.lieux_non_classes.length; j++) {
-                //Parcourir les collections du membres
-                if(membre.lieux_non_classes[j]._id===parseInt(req.params.lieu_id)){
-                 unLieu=membre.lieux_non_classes[j];
-                 uneCollection.push(unLieu);
-                 membre.lieux_non_classes[j].remove(unLieu);
-                 break;
-                }
-                
-            }
-
-            if (unLieu === null || typeof (unLieu) === 'undefined') {
-                console.log("Erreur, ce lieu n'\existe pas");
-                res.status(400).end();
-                return;
-            }
-               membre.save(function (err) {
-               // MembreModel.findByIdAndUpdate(req.params.mem_id, membre, function (err) {
-                    if (err) {
-                        console.log("Erreur de base des données lors de la modification du lieu: " + err);
-                        res.status(400).end();
-                        return;
-                    }
-                 //   res.location(req.protocol + '://' + req.get('host') + req.originalUrl + "/" + lieu._id);
-                    res.status(201).json(unLieu);
-                });
-               
-            } else {
-                console.log('Le membre no. ' + req.params.mem_id + "  n'existe pas");
-                res.status(404).end();
-            }
-
-        });
-   /*  } else {
-        res.status(405).json("Erreur, Vous n'avez pas acces.").end();
-        return;
-    } */
-//})
-// Méthode HTTP non permise
-/*.all(function (req, res) {
-    'use strict';
-    console.log('Méthode HTTP non permise.');
-    res.status(405).end();
-});
- */
-
- // Route pour ajouter un lieu à une collection.
+//Permet à un membre ayant <mem_id> pour identifiant d’ajouter
+//la ressource « lieux » ayant « lieux_id » comme identifiant à
+// la ressource « collection » ayant « collection_id » comme identifiant.
 //==================================================
 routerApi.route('/membres/:mem_id/collections/:col_id/lieux/:lieu_id')
 
-.put(function (req, res) {
-    
-  //  if (req.params.mem_id == req.decoded._id) {
+    .put(function (req, res) {
+       //Vérification des accès
+   if (req.params.mem_id !== req.jeton.membre_id)
+   {
+   console.log('Accès non autorisé');
+   res.status(401).end();
+   return;
+   }
         // Vérification si le membre existe.
         MembreModel.findById(req.params.mem_id, function (err, membre) {
             if (err) {
@@ -570,193 +486,266 @@ routerApi.route('/membres/:mem_id/collections/:col_id/lieux/:lieu_id')
                         break;
                     }
                 }
-                 //Si la collection n'existe pas:
-                if (uneCollection === null || typeof (uneCollection) === 'undefined') {
-                    console.log("Erreur, cette collection n'\existe pas !");
-                    res.status(400).end();
+                //Si la collection n'existe pas:
+                if (uneCollection === null) {
+                    console.log("Erreur, la collection n'\existe pas !");
+                    res.status(404).end();
                     return;
                 }
                 //La collection existe, on vérifie le lieu
-               // var lieuTrouve = false;
-                var unLieu=null;
+                var lieuExiste = false;
+
+                //Vérification d'abord si le lieu existe dans la collection:
+                //Parcours des lieux de la collection:
+                for (var k = 0; k < uneCollection.lieux.length; k++) {
+                    if (uneCollection.lieux[k]._id === parseInt(req.params.lieu_id)) {
+                        lieuExiste = true;
+                        console.log("Ce lieu existe déjâ dans la collection !");
+                        res.status(400).end();
+                        return;
+                    }
+                }
+                //Le lieu n'existe pas dans la collection,alors
+                //On regarde dans la liste des lieux non classés
+                var unLieu = null;
                 for (var j = 0; j < membre.lieux_non_classes.length; j++) {
                     if (membre.lieux_non_classes[j]._id === parseInt(req.params.lieu_id)) {
-                        unLieu=membre.lieux_non_classes[j];
+                        unLieu = membre.lieux_non_classes[j];
                         uneCollection.lieux.push(unLieu);
                         membre.lieux_non_classes.remove(unLieu);
-                       // lieuTrouve = true;
+                        lieuExiste = true;
 
                         break;
                     }
                 }
-                 
-                //Si le lieu n'existe pas:
-                 if (unLieu === null || typeof (unLieu) === 'undefined') {
-                    console.log('Erreur, lieu ' + req.params.lieu_id + ' inexistant');
-                    res.status(400).json('Erreur, lieu ' + req.params.lieu_id + ' inexistant').end();
+                //Si le lieu n'existe pas, on regarde dans le body:
+                
+                if (lieuExiste === false) {
+                    unLieu = new LieuModel();
+                    unLieu._id = req.params.lieu_id;
+                     //le nom du lieu est obligatoire:
+                if (uneCollection === null) {
+                    console.log("Le nom est requis");
+                    res.status(400).end();
                     return;
                 }
-   
-               //Le lieu est trouvé, on enregistre:
-                    membre.save(function (erreur) {
-                        if (erreur) {
-                            console.log('Erreur lors de l\'enregistrement du membre');
-                            res.status(400).end();
-                            return;
-                        }
-                        res.status(200).end();
+                    unLieu.nom = req.body.nom;
+                    unLieu.date_creation = req.body.date_creation;
+                    unLieu.infos = req.body.infos;
+                    unLieu.type_lieu = req.body.type_lieu;
+                    unLieu.coordonnees = req.body.coordonnees;
+                    uneCollection.lieux.push(unLieu);
+                }
+                //Le lieu est trouvé, on enregistre:
+                membre.save(function (erreur) {
+                    if (erreur) {
+                        console.log('Erreur lors de l\'enregistrement du membre');
+                        res.status(400).end();
                         return;
-                    });
-               
+                    }
+                    res.status(200).end();
+                    return;
+                });
+
             } else {
-                console.log('Le membre no. ' + req.params.mem_id + "  n'existe pas");
+                console.log(req.params.mem_id+'est un numéro d\'un membre qui n\'existe pas');
                 res.status(404).end();
             }
 
         });
-   /*  } else {
-        res.status(405).json("Erreur, Vous n'avez pas acces.").end();
-        return;
-    } */
-})
+    
+    })
 
-// Méthode HTTP non permise
-.all(function (req, res) {
-    console.log('Méthode HTTP non permise.');
-    res.status(405).end();
-});
+    //-----------------------------------------------------
+    //Retirer la ressource "lieu" ayant "lieux_id"
+    // comme identifiant de la ressource "collection" ayant
+    // "collection_id" comme identifiant.
+    //-----------------------------------------------------
+    .delete(function (req, res) {
+         //Vérification des accès
+        if (req.params.mem_id !== req.jeton.membre_id)
+        {
+        console.log('Accès non autorisé');
+        res.status(401).end();
+        return;
+        }
+        // Vérification si le membre existe.
+        MembreModel.findById(req.params.mem_id, function (err, membre) {
+            if (err) {
+                console.log('Erreur, ce membre n\'existe pas');
+                res.status(404).end();
+            }
+            //Si le membre existe
+            if (membre !== null) {
+                var uneCollection = null;
+                var unLieu = null;
+                var lieuExiste = false;
+
+                //Parcours de la liste des collections du membre
+                //pour vérifier si la collection existe:
+                for (var i = 0; i < membre.collections_crees.length; i++) {
+                    if (membre.collections_crees[i]._id === parseInt(req.params.col_id)) {
+                        uneCollection = membre.collections_crees[i];
+                        //La collection existe, on vérifie le lieu                
+                        //Vérification d'abord si le lieu existe dans la collection:
+                        //Parcours des lieux de la collection:
+                        for (var k = 0; k < uneCollection.lieux.length; k++) {
+                            if (uneCollection.lieux[k]._id === parseInt(req.params.lieu_id)) {
+                                lieuExiste = true;
+
+                                unLieu = uneCollection.lieux[k];
+                                //Le lieu est trouvé, on le supprime
+                                delete membre.collections_crees[i].lieux[k];
+                                membre.collections_crees[i].lieux = membre.collections_crees[i].lieux.filter(function () {
+                                    return true;
+                                });
+                                break;
+                            }
+                        }
+                        //break;
+                    }
+                }
+                //Si la collection n'existe pas:
+                if (uneCollection === null) {
+                    console.log("Erreur, vous n'avez pas cette!");
+                    res.status(400).end();
+                    return;
+                }
+
+                if (lieuExiste === false) {
+                    console.log("Erreur, le lieu n'\existe pas !");
+                    res.status(400).end();
+                    return;
+                }
+                //On enregistre les modifications:
+                MembreModel.findByIdAndUpdate(req.params.mem_id, membre, function (err) {
+                    if (err) {
+                        console.log('Erreur lors de l\'enregistrement des modifications :' + err);
+                        res.status(400).end();
+                        return;
+                    }
+                    res.status(200).end();
+                });
+
+            } else {
+                console.log(req.params.mem_id+ 'est un numéro d\'un membre qui n\'existe pas');
+                res.status(404).end();
+            }
+
+        });
+    })
+
+    // Méthode HTTP non permise
+    .all(function (req, res) {
+
+        console.log('Méthode HTTP non permise.');
+        res.status(405).end();
+    });
 
 //*************************************** */
 //=========Routes pour les collections====//
 //*************************************** */
-
-
 routerApi.route('/membres/:mem_id/collections')
-//-----------------------------------
-// Retourner toutes les collections
-//-----------------------------------
-.get(function (req, res) {
-    //  if (req.params.mem_id == req.decoded._id) {
-          // Vérification si le membre existe.
-          MembreModel.findById(req.params.mem_id, function (err, membre) {
-              if (err) {
-                  console.log('Erreur, ce membre n\'existe pas');
-                  res.status(400).end();
-              }
-              //Si le membre existe
-              if (membre !== null) {
-                  var lstCollections=[];
-                console.log('Récupération de toutes les collections crées du membre.');
-
-                    for (var i = 0; i < membre.collections_crees.length; i++) {
-                      lstCollections.push(membre.collections_crees[i]);
-                    }
-                    //***************************************** */
-                    //Il manque les collections invité
-                    // C'est une autre route.
-                    //****************************************** */
-                    res.json(lstCollections);
-                   
-              } else {
-                  console.log('Le membre no. ' + req.params.mem_id + "  n'existe pas");
-                  res.status(404).end();
-              }
-  
-          });
-     /*  } else {
-          res.status(405).json("Erreur, Vous n'avez pas acces.").end();
-          return;
-      } */
-})
-
-//------------------------------------
-// Permet à un membre ayant mem_id 
-// de créer une collection.
-//------------------------------------
-.post(function (req, res) {
-
-  //  if (req.params.mem_id == req.decoded._id) {
-        // Tentative de récupération du membre concerné.
+    //Pour afficher toutes les collections
+    //d'un membre identifié par son id.
+    
+    .get(function (req, res) {
+        console.log('Accès non autorisé');
+         //Vérification des accès
+   if (req.params.mem_id !== req.jeton.membre_id)
+   {
+   console.log('Accès non autorisé');
+   res.status(401).end();
+   return;
+   }
+        // Vérification si le membre existe.
         MembreModel.findById(req.params.mem_id, function (err, membre) {
             if (err) {
-                console.log("Erreur lors de la consultation du membre: " + err);
-                res.status(404).send("Bad request");
-                return;
+                console.log('Erreur, membre inexistant');
+                res.status(400).end();
+            }
+            //Si le membre existe
+            if (membre !== null) {
+                var lstCollections = [];
+                console.log('Récupération de toutes les collections crées par ce membre.');
+
+                for (var i = 0; i < membre.collections_crees.length; i++) {
+                    lstCollections.push(membre.collections_crees[i]);
+                }
+                res.json(lstCollections);
+
+            } else {
+                console.log(req.params.mem_id+'est un numéro d\'un membre qui n\'existe pas');
+                res.status(404).end();
             }
 
+        });
+       
+    })
+    
+    //Pour créer une collection
+    //pour un membre identifié par son id.
+    //-------------------------------------------
+    .post(function (req, res) {
+         //Vérification des accès
+            if (req.params.mem_id !== req.jeton.membre_id)
+            {
+            console.log('Accès non autorisé');
+            res.status(401).end();
+            return;
+            }
+        // Récupération du membre en question (vérification).
+        MembreModel.findById(req.params.mem_id, function (err, membre) {
+            if (err) {
+                console.log("Erreur de bd en consultant le membre: " + err);
+                res.status(400).end();
+                return;
+            }
+              //Si le membre n'existe pas
             if (membre === null) {
-                console.log('Le membre no. ' + req.params.mem_id + "  n'existe pas");
-                res.status(404).send("Bad request");
+                console.log("Erreur, membre inexistant");
+                res.status(400).end();
                 return;
             }
-            var collection = new CollectionCreeModel(req.body);
-            console.log(collection.validateSync()===null,req.body);
-
-            if(collection.validateSync() !== undefined){
-                console.log("Erreur, membre inexistant", collection.validateSync());
-                res.status(400).send("Membre invalide");
-                return;
-            }
-
-            collection.nom = req.body.nom;
-            collection.lieux = []; //|| req.body.lieux;
-            collection.partagee_avec = []; // || req.body.partagee_avec;
-            membre.collections_crees.push(collection);
-            membre.update(collection);
-            membre.save(function (err) {
-                if (err) {
-                            console.log("Erreur lors de l'enregistrement du Membre avec la nouvelle collection: " + err);
-                            res.status(500).send("Erreur serveur");  
-                        }
-                        //res.location(req.protocol + '://' + req.get('host') + req.originalUrl + "/" + collection._id);
-                        res.status(201).json(collection);
-                    });
-            
             // Si le membre existe
-            
-                //var collection = new CollectionCreeModel();
-                
-                // On assigne _id à zéro par default
-                /*collection._id = 0;
-                CompteurModel.findByIdAndUpdate({
-                    _id: COMPTEUR_ID_COLLECTION
-                }, {
-                    $inc: {
-                        seq: 1
-                    }
-                }, {
-                    "upsert": true,
-                    "new": true
-                }, function (err, counter) {
+            //on crée la collection:
+            else {
+                var collection = new CollectionCreeModel();
+                //Par defaut id est mis à zéro.
+                collection._id = 0;
+                CompteurModel.findByIdAndUpdate({_id: COLL_CPT_ID}, 
+                                                {$inc:{seq: 1}},
+                                                {"upsert": true,"new": true},
+                                                 function (err, cpt) {
                     if (err) {
-                        console.log("Erreur de base des données pour la gestion du compteur COMPTEUR_ID_COLLECTION: " + err);
+                        console.log("Erreur  du compteur des id des collections: " + err);
                         res.status(400).end();
                         return;
-                    } */
-                    // Si le compteur est nul ça veut dire que c'est la première fois qu'on l'utilise,
-                    // donc on doit l'initialiser    
-                    /* if (counter === null) {
-                        counter = new CompteurModel();
-                        counter._id = COMPTEUR_ID_COLLECTION;
-                        counter.seq = 1;
-                        counter.save(function (err) {
+                    }
+                    //Initialisation du compteur
+                    //s'il est null
+                    if (cpt === null) {
+                        cpt = new CompteurModel();
+                        cpt._id = COLL_CPT_ID;
+                        cpt.seq = 1;
+                        cpt.save(function (err) {
                             if (err) {
-                                console.log("Erreur de base des données pour la création du compteur COMPTEUR_ID_COLLECTION: " + err);
+                                console.log("Erreur  du compteur des id collection: " + err);
                                 res.status(400).end();
                                 return;
                             }
                         });
-                    } 
-                    // On assigne l'ID du membre selon la dernière séquence du compteur MEMBRE
-                    collection._id = counter.seq;
-
+                    }
+                    // Attribution du id à la collection en respectant
+                    //la dernière séquence du cpt id collection
+                    collection._id = cpt.seq;
                     collection.nom = req.body.nom;
                     collection.lieux = [];
                     collection.partagee_avec = [];
                     membre.collections_crees.push(collection);
                     membre.save(function (err) {
                         if (err) {
-                            console.log("Erreur lors de l'enregistrement du Membre avec la nouvelle collection: " + err);
+                            console.log("Erreur lors d'enregistrement de la nouvelle collection: " + err);
                             res.status(400).end();
                             return;
                         }
@@ -764,192 +753,369 @@ routerApi.route('/membres/:mem_id/collections')
                         res.status(201).json(collection);
                         return;
                     });
-                });*/
-            
+                });
+            }
         });
-    /* } else {
-        res.status(405).json("Erreur, Vous n'avez pas acces.").end();
-        return;
-    } */
-})
-// Méthode HTTP non permise
-.all(function (req, res) {
-    
-    console.log('Méthode HTTP non permise.');
-    res.status(405).end();
-});
+      
+    })
+    // Méthode HTTP non permise
+    .all(function (req, res) {
+        console.log('Méthode HTTP non permise.');
+        res.status(405).end();
+    });
 
-routerApi.route('/membres/:mem_id/collectionsInvitees')
-//------------------------------------------
-// Retourner toutes les collections invitées
-//------------------------------------------
-.get(function (req, res) {
-    //  if (req.params.mem_id == req.decoded._id) {
-          // Vérification si le membre existe.
-          MembreModel.findById(req.params.mem_id, function (err, membre) {
-              if (err) {
-                  console.log('Erreur, ce membre n\'existe pas');
-                  //res.status(400).end();
-                  res.status(404).send("membre inexistant");
-                  return;
-              }
 
-              //Si le membre n'existe pas
-             /* if (membre === null) {
-                //console.log("Erreur, membre inexistant");
-                console.log('Le membre no. ' + req.params.mem_id + "  n'existe pas");
-                res.status(404).send("Bad request");
-                return;
-             }*/
-              //Si le membre existe
-              if (membre !== null) {
-                var lstCollectionsInvitees=[];
-                console.log('Récupération de toutes les collections invitées du membre.');
-
-               /*  for (var i = 0; i < membre.collections_invitees.length; i++) {
-                    lstCollectionsInvitees.push(membre.collections_invitees[i]);
-                    
-                } */
-
-                //Parcours du tableau des collections invitée
-                //pour chercher les collection créées par les membres
-                //dont le id est dans collections_invitees
-                for (var j = 0; j < membre.collections_invitees.length; j++) {
-                    var idMem=membre.collections_invitees[j].id_createur;
-                    var idColl=membre.collections_invitees[j].id_collection;
-                     var uneCollection=recupererCollectionsCrees(res, idMem, idColl);
-                    lstCollectionsInvitees.push(uneCollection);
-                  }
-
-                
-                res.json(lstCollectionsInvitees);
-                   
-              } else {
-                  console.log('Le membre no. ' + req.params.mem_id + "  n'existe pas");
-                  res.status(404).end();
-              }
-  
-          });
-     /*  } else {
-          res.status(405).json("Erreur, Vous n'avez pas acces.").end();
-          return;
-      } */
-});
-
-routerApi.route('/membres/:mem_id/collections/:collection_id')
 //--------------------------------------------
 // Permet à un membre ayant mem_id comme identifiant de 
 // détruire une collection ayant collection_id pour identifiant.
 //--------------------------------------------
-.delete(function (req, res) {
-    //if (req.params.mem_id == req.decoded._id) {
-        // Tentative de récupération du membre concerné.
+routerApi.route('/membres/:mem_id/collections/:collection_id')
+    .delete(function (req, res) {
+        //Vérification des accès
+            if (req.params.mem_id !== req.jeton.membre_id)
+            {
+            console.log('Accès non autorisé');
+            res.status(401).end();
+            return;
+            }
+        // Récupération du membre en question.
         MembreModel.findById(req.params.mem_id, function (err, membre) {
             if (err) {
                 console.log('Erreur, lors de consultation de la base de données.');
                 res.status(400).end();
                 return;
             }
-
+            //Si le membre n'existe pas
             if (membre === null) {
-                console.log("Erreur, le membre no." + req.params.mem_id + " n'existe pas.");
+                console.log("Erreur, membre inexistant");
                 res.status(404).end();
             } else {
 
-                var mesCollections = membre.collections_crees;
-
-                for (var i = 0; i < mesCollections.length; i++) {
-                    if (mesCollections[i]._id === parseInt(req.params.collection_id)) {
-                        // On efface les liens de la collection si elle est partagée avec d'autres membres
-                        for (var j = 0; j < mesCollections[i].partagee_avec.length; j++) {
-                            supprimerCollectionsInvitees(res, mesCollections[i].partagee_avec[j], parseInt(req.params.collection_id));
+                var collections = membre.collections_crees;
+                //Parcours des collections crées du membre
+                for (var i = 0; i < collections.length; i++) {
+                    if (collections[i]._id === parseInt(req.params.collection_id)) {
+                        // Parcours du tableau partagee_avec et appel de 
+                        //la fonction qui supprime le partage avec les
+                        //autres membres.
+                        for (var j = 0; j < collections[i].partagee_avec.length; j++) {
+                            supprimerCollectionsInvitees(res, collections[i].partagee_avec[j], parseInt(req.params.collection_id));
                         }
-                        membre.collections_crees.remove(mesCollections[i]);
-                        break;  
+                        membre.collections_crees.remove(collections[i]);
+                        break;
                     }
                 }
+                //Enregistrement des modifications.
                 MembreModel.findByIdAndUpdate(req.params.mem_id, membre, function (err) {
                     if (err) {
-                        console.log('Consultation du membre no : ' + req.params.mem_id + " error");
+                        console.log('Erreur de modification du membre numéro: ' + req.params.mem_id);
                         res.status(400).end();
                     }
-                    // Si suppression réussie.
+                    //Code 204, pas de contenu
                     res.status(204).end();
                 });
             }
         });
-    /* } else {
-        res.status(405).json("Erreur, Vous n'avez pas acces.").end();
-        return;
-    } */
-})
-
-// Méthode HTTP non permise
-.all(function (req, res) {
-    //'use strict';
-    console.log('Méthode HTTP non permise.');
-    res.status(405).end();
-});
-
-/*function recupererCollectionsCrees(res, mem_id, col_id) {
-    var uneCollection= new CollectionCreeModel();
-    // On obtient la collection du membre de la base des données avec seulement les champs nécessaires pour le retour JSON
-    MembreModel.findById(mem_id, function (err, membreInv) {
-        if (err) {
-            console.log('Erreur de la BD lors de la consulation du membre: ' + err);
-            res.status(400).json('Erreur de la BD lors de la consulation du membre: ' + err).end();
-        }
        
-        if (membreInv !== null ) {
-            for (var i = 0; i < membreInv.collections_crees.length; i++) {
-                if (membreInv.collections_crees[i].id_collection === col_id) {
-                    uneCollection= membreInv.collections_crees.find(membreInv.collections_crees[i]);
-                    break;
+    })
+
+    // Méthode HTTP non permise
+    .all(function (req, res) {
+        console.log('Méthode HTTP non permise.');
+        res.status(405).end();
+    });
+
+ //---------------------------------------------
+//Route pour retourner les collections dont on a
+//reçu le partage.
+//----------------------------------------------
+routerApi.route('/membres/:mem_id/collectionsInvitees')
+    
+    .get(function (req, res) {
+         //Vérification des accès
+   if (req.params.mem_id !== req.jeton.membre_id)
+   {
+   console.log('Accès non autorisé');
+   res.status(401).end();
+   return;
+   }
+        // Vérification si le membre existe.
+        MembreModel.findById(req.params.mem_id, function (err, membre) {
+            if (err) {
+                console.log('Erreur, membre inexistant');
+                res.status(404).send();
+                return;
+            }
+
+            //Si le membre n'existe pas
+            if (membre === null) {
+               //console.log("Erreur, membre inexistant");
+               console.log('Membre inexistant');
+               res.status(404).send();
+               return;
+            }
+            //Si le membre existe
+            if (membre !== null) {
+
+                console.log('Récupération des collections invitées du membre.');
+
+                //Parcours du tableau des collections invitée
+                //pour chercher les collection créées par les membres
+                //dont le id est dans collections_invitees
+               
+                for (var j = 0; j < membre.collections_invitees.length; j++) {
+                    var idMem = membre.collections_invitees[j].id_createur;
+                    var idColl = membre.collections_invitees[j].id_collection;
+                   recupererCollectionsCrees(res, idMem, idColl);
+                 
+                }
+               
+            } else {
+                console.log(req.params.mem_id+ 'est un numéro d\'un membre qui n\'existe pas');
+                res.status(404).end();
+            }
+
+        });
+       
+    })
+
+    // Méthode HTTP non permise
+    .all(function (req, res) {
+        //'use strict';
+        console.log('Méthode HTTP non permise.');
+        res.status(405).end();
+    });
+
+
+//Permet de créer un partage de collection entre deux membres.
+routerApi.route('/membres/:mem_id/collections/:col_id/partageAvec/:mem_invite_id')
+    .post(function (req, res) {
+        //Vérification des accès
+   if (req.params.mem_id !== req.jeton.membre_id)
+   {
+   console.log('Accès non autorisé');
+   res.status(401).end();
+   return;
+   }
+        // Récupperation du membre en question.
+        MembreModel.findById(req.params.mem_id, function (err, membre) {
+            if (err) {
+                console.log("Erreur en tentant de consulter le membre: " + err);
+                res.status(400).end();
+                return;
+            }
+            //Si le membre est null
+            if (membre === null) {
+                console.log("Erreur, membre inexistant");
+                res.status(400).end();
+                return;
+            }
+            // Si le membre existe
+            else {
+                //Vérification, en premier lieu, si l'id de l'invité
+                //et celui du membre ne sont pas les mêmes
+                //un partage avec lui même ne marche pas.
+                if (parseInt(req.params.mem_id) === parseInt(req.params.mem_invite_id)) {
+                    console.log("Erreur, vous ne pouvez pas partager la collection avec vous-même");
+                    res.status(400).end();
+                    return;
+                }
+
+                var uneCollection = null;
+                //Parcours de la liste des collections du membre
+                //pour vérifier si la collection existe:
+                for (var i = 0; i < membre.collections_crees.length; i++) {
+                    if (membre.collections_crees[i]._id === parseInt(req.params.col_id)) {
+                        uneCollection = membre.collections_crees[i];
+                        break;
+                    }
+                }
+                //Si la collection n'existe pas:
+                if (uneCollection === null || typeof (uneCollection) === 'undefined') {
+                    console.log("Erreur, cette collection n'\existe pas !");
+                    res.status(404).end();
+                    return;
+                }
+                //Vérification si le partage exsite déjà avec le
+                //membre invité en question:
+                var partageExiste = false;
+                for (var k = 0; k < uneCollection.partagee_avec.length; k++) {
+                    if (uneCollection.partagee_avec[k] === parseInt(req.params.col_id)) {
+                        partageExiste = true;
+                        break;
+                    }
+                }
+                if (partageExiste === true) {
+                    console.log("Erreur, la collection est déjà partagée avec ce membre");
+                    res.status(400).end();
+                    return;
+                }
+                if (partageExiste === false) {
+                    //Vérification si le membre avec lequel le partage doit être fait
+                    //(dont l'id est passé en paramètre) existe
+                    MembreModel.findById(req.params.mem_invite_id, function (err, membreInvite) {
+                        if (err) {
+                            console.log("Erreur lors de la consultation du membre: " + err);
+                            res.status(400).end();
+                            return;
+                        }
+
+                        if (membreInvite === null) {
+                            console.log("Erreur, le membre avec lequel vous voulez faire le partage n'existe pas.");
+                            res.status(400).end();
+                            return;
+                        }
+                        //Le membre invité existe,le partage n'existe pas
+                        //donc on crée la relation de partage
+                        var partage = new CollectionInviteModel();
+                        partage.id_createur = membre._id;
+                        partage.id_collection = uneCollection._id;
+                        membreInvite.collections_invitees.push(partage);
+                        //Enregistrement des modifications: 
+                        membreInvite.save(function (err) {
+                            if (err) {
+                                console.log('Erreur lors de la mise a jour des données du membre no : ' + req.params.mem_invite_id);
+                                res.status(400).end();
+                                return;
+                            }
+                        });
+                        //Enregistrement du id du membre invité
+                        //dans la liste de partage du membre 
+                        //créateur.
+                        uneCollection.partagee_avec.push(membreInvite._id);
+                        res.status(200).json({
+                            '_id': uneCollection._id,
+                            'nom': uneCollection.nom,
+                            'partage_avec': req.params.mem_invite_id
+                        });
+                        //Enregistrement des modifications: 
+                        membreInvite.save(function (err) {
+                            if (err) {
+                                console.log('Erreur lors de la mise a jour des données du membre no : ' + req.params.mem_invite_id);
+                                res.status(400).end();
+                                return;
+                            }
+                        });
+
+                    });
+
                 }
             }
-            membreInv.save(function (err) {
-                if (err) {
-                    console.log('Erreur de la BD lors de la consulation du membre: ' + err);
-                    res.status(400).json('Erreur de la BD lors de la consulation du membre: ' + err).end();
-                }
-            });
-        } else {
-            console.log('Erreur de la BD lors de la consulation du membre: ' + err);
-            res.status(400).json('Erreur de la BD lors de la consulation du membre: ' + err).end();
-        }
+        });
+    })
+    // Méthode HTTP non permise
+    .all(function (req, res) {
+        console.log('Méthode HTTP non permise.');
+        res.status(405).end();
     });
-    return uneCollection;
-}*/
 
-function supprimerCollectionsInvitees(res, mem_id, col_id) {
 
-    // On obtient la collection du membre de la base des données avec seulement les champs nécessaires pour le retour JSON
-    MembreModel.findById(mem_id, function (err, mem) {
+//******************************************************** */
+//***********************Fonctions************************ */    
+//******************************************************** */
+
+
+//Fonction pour récuperer le membre créateur de la collection
+//invité et afficher les collections concernées.
+function recupererCollectionsCrees(res, mem_id, col_id) {
+    var uneCollection = new CollectionCreeModel();
+   //tableau pour stocker les collections trouvées:
+    var lstCollectionsInvitees = [];
+    
+        MembreModel.findById(mem_id, function (err, membreInv) {
         if (err) {
             console.log('Erreur de la BD lors de la consulation du membre: ' + err);
-            res.status(400).json('Erreur de la BD lors de la consulation du membre: ' + err).end();
+            res.status(400).end();
         }
-        if (mem !== null && typeof (mem) !== 'undefined') {
+         //Si le membre invitant existe
+        if (membreInv !== null) {
+             //On parcours ses collections créées
+             //Pour trouver celles qui nous sont partagées.
+          
+             for (var i = 0; i < membreInv.collections_crees.length; i++) {
+
+                if (membreInv.collections_crees[i]._id === parseInt(col_id)) {
+
+                    uneCollection = membreInv.collections_crees[i];
+                    lstCollectionsInvitees.push(uneCollection);
+                }
+            }
+        
+            res.json(lstCollectionsInvitees);
+        } else {
+            console.log('Erreur de la BD lors de la consulation du membre: ' + err);
+            res.status(400).end();
+        }
+    });
+    
+}
+
+
+//Fonction pour trouver un membre et supprimer le partage
+//de collection.Fonction appelée lors de la suppression
+//d'une collection par son membre créateur.
+function supprimerCollectionsInvitees(res, mem_id, col_id) {
+
+    //Récupération du membre en question:
+    MembreModel.findById(mem_id, function (err, mem) {
+        if (err) {
+            console.log('Erreur de consultation du membre: ' + err);
+            res.status(400).end();
+        }
+        //Si le membre existe, on parcours sa liste
+        //de collections_invitees et on supprime le lien
+        //de partage.
+        if (mem !== null) {
             for (var i = 0; i < mem.collections_invitees.length; i++) {
                 if (mem.collections_invitees[i].id_collection === col_id) {
                     mem.collections_invitees.remove(mem.collections_invitees[i]);
                     break;
                 }
             }
+            //Enregistrement des modifications:
             mem.save(function (err) {
                 if (err) {
-                    console.log('Erreur de la BD lors de la consulation du membre: ' + err);
-                    res.status(400).json('Erreur de la BD lors de la consulation du membre: ' + err).end();
+                    console.log('Erreur en tentant de consulter le  membre: ' + err);
+                    res.status(400).end();
                 }
             });
         } else {
-            console.log('Erreur de la BD lors de la consulation du membre: ' + err);
-            res.status(400).json('Erreur de la BD lors de la consulation du membre: ' + err).end();
+            console.log('Le membre n\'existe pas');
+            res.status(400).end();
         }
     });
 }
 
 
-
+function verifierAuthentification(req, callback) {
+    var auth = req.headers.Authorization || req.headers.authorization;
+    if (!auth) {
+    // Pas de jeton donc pas connecté.
+    callback(false, null);
+    } else {
+    // Structure de l'en-tête "Authorization" : "Bearer jeton-jwt"
+    var authArray = auth.split(' ');
+    if (authArray.length !== 2) {
+    // Mauvaise structure pour l'en-tête "Authorization".
+    callback(false, null);
+    } else {
+    // Le jeton est après l'espace suivant "Bearer".
+    var jetonEndode = authArray[1];
+    // Vérification du jeton.
+    jwt.verify(jetonEndode, req.app.get('jwt-secret'), function (err, jetonDecode) {
+    //jwt.verify(jetonEndode, 'config', function (err, jetonDecode) {
+    if (err) {
+    // Jeton invalide.
+    callback(false, null);
+    } else {
+    // Jeton valide.
+    callback(true, jetonDecode);
+    }
+    });
+    }
+    }
+    }
+   
+    
 // Rendre l'objet router disponible de l'extérieur.
 module.exports = routerApi;

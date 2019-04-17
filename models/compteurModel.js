@@ -9,5 +9,5 @@ var CompteurSchema = mongoose.Schema ({
     seq: {type: Number, default: 0}
  });
 
-// Rendre le modèle Compteur disponible de l'extérieur.
+// Rendre le modèle Compteur disponible à l'extérieur.
 module.exports.CompteurModel = mongoose.model('Compteur', CompteurSchema);
