@@ -4,7 +4,8 @@
   "description": "TP3 node js  express mongoDb javascript",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node app.js"
   },
   "keywords": [
     "node",
@@ -12,7 +13,7 @@
     "mongo",
     "javascript"
   ],
-  "author": "Rabah-Anita-Olivier",
+  "author": "Anita-Rabah-Olivier",
   "license": "ISC",
   "dependencies": {
     "bcrypt": "^3.0.6",
