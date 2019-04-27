@@ -1,11 +1,14 @@
 'use strict';
 var express = require('express');
+var app = express();
 // Router pour l'API REST.
 var routerApi = express.Router();
 var jwt = require('jsonwebtoken');
-var ObjectID = require('mongodb').ObjectID;
+//Pour crypter le mot de passe
+var bcrypt = require('bcrypt');
 // ORM Mongoose.
 var mongoose = require('mongoose');
+var async = require('async');
 // Connexion à MongoDB avec Mongoose.
 mongoose.connect('mongodb://localhost:27017/jeu_de_donnees', {
     //useMongoClient: true,
@@ -13,25 +16,47 @@ mongoose.connect('mongodb://localhost:27017/jeu_de_donnees', {
     poolSize: 10
 });
 
+
+
 // Ajout d'un middleware qui intercepte toutes les requêtes.
 routerApi.use(function (req, res, next) {
-    // Vérification de l'authorisation.
-    verifierAuthentification(req, function (estAuthentifie, jetonDecode) {
-        if (!estAuthentifie) {
-            // Utilisateur NON authentifié.
+    // Validation du token.
+    var auth = req.headers.Authorization || req.headers.authorization;
+   if(req.url!=='/membres'){
+    if (!auth) {
+        // Pas de token (donc, pas connecté).
+        res.status(401).end();
+    } else {
+        // Structure de l'en-tête "Authorization" : "Bearer jwt"
+        var authArray = auth.split(' ');
+        if (authArray.length !== 2) {
+            // Mauvaise structure pour l'en-tête "Authorization".
             res.status(401).end();
         } else {
-            // Utilisateur authentifié.
-            // Sauvegarde du jeton décodé dans la requête pour usage ultérieur.
-            req.jeton = jetonDecode;
+            // Le token est après l'espace suivant "Bearer".
+            var token = authArray[1];
             // Pour le déboggage.
-           // console.log("Jeton : " + JSON.stringify(jetonDecode));
-            // Poursuite du traitement de la requête.
-            next();
-        }
-    });
-});
+            console.log('Token  = ' + token);
 
+            // Vérification du token.
+            jwt.verify(token, req.app.get('jwt-secret'), function (err, tokenDecoded) {
+                if (err) {
+                    // Token invalide.
+                    return res.status(401).end();
+                } else {
+                    // Token valide.
+                    // Sauvegarde du jeton décodé dans la requête pour usage ultérieur.
+                    req.token = tokenDecoded;
+                    // Poursuite du traitement de la requête.
+                    next();
+                }
+            });
+        }
+    }
+} else {
+    next();
+}//fin test
+});
 
 
 // Modèle Mongoose concernant les Coordonnées d'un.
@@ -57,19 +82,6 @@ var COLL_CPT_ID = 1;
 var LIEU_CPT_ID = 2;
 
 
-// Ajout d'un middleware qui intercepte toutes les requêtes;
-// exécutées lors de chaque requête faite à l'API.
-routerApi.use(function (req, res, next) {
-    
-    // Log de chaque requête faite à l'API.
-    console.log(req.method, req.url);
-    // On pourrait valider le jeton d'accès ici !
-
-    // Permet de poursuivre le traitement de la requête.
-    next();
-});
-
-
 
 
 //Racine de l'API.
@@ -80,17 +92,125 @@ routerApi.get('/', function (req, res) {
     res.end('L\'API fonctionne bien !');
 });
 
+
+
+
 //*********************************************** */
 //*******************Membres********************* */
 //*********************************************** */
+//---------------CRÉATION D'UN MEMBRE------------
+// Route désignant une resource Membre 
+// ==================================
+routerApi.route('/membres')
 
+    // Création d'un nouveau membre.
+    .post(function (req, res) {
+        console.log('Creation d\'un nouveau membre');
+
+        if (req.body.nom_util === null || req.body.courriel === null || req.body.mot_passe === null) {
+            console.log("Erreur, 'nom_utilisateur', 'courriel' et 'mot_passe' sont requis");
+            res.status(400).end();
+            return;
+        }
+
+        if (typeof (req.body.nom_util) === 'undefined' || typeof (req.body.courriel) === 'undefined' || typeof (req.body.mot_passe) === 'undefined') {
+            console.log("Erreur, 'nom_utilisateur', 'courriel' et 'mot_passe' sont requis");
+            res.status(400).end();
+            return;
+        }
+
+        if (req.body.nom_util.trim().length === 0 || req.body.courriel.trim().length === 0 || req.body.mot_passe.trim().length === 0) {
+            console.log("Erreur, 'nom_utilisateur', 'courriel' et 'mot_passe' sont requis");
+            res.status(400).end();
+            return;
+        }
+
+        // Vérification de l'existence du membre
+        MembreModel.findOne({
+            'nom_util': req.body.nom_util
+        }, function (err, resultat) {
+            // Erreur si le nom du membre existe deja dans la bd.
+            if (resultat !== null) {
+                console.log("Erreur, ce membre existe déjà !");
+                res.status(400).end();
+                return;
+            }
+            var membre = new MembreModel();
+            // Par defaut id=0 
+            membre._id = 0;
+            CompteurModel.findByIdAndUpdate({
+                _id: MEMBRE_CPT_ID
+            }, {
+                $inc: {
+                    seq: 1
+                }
+            }, {
+                "upsert": true,
+                "new": true
+            }, function (err, cpt) {
+                if (err) {
+                    console.log("Erreur de bd concernant les compteurs MEMBRE_CPT_ID: " + err);
+                    res.status(400).end();
+                    return;
+                }
+                // Initialisation du compteur s'il est null
+              
+                if (cpt === null) {
+                    cpt = new CompteurModel();
+                    cpt._id = MEMBRE_CPT_ID;
+                    cpt.seq = 1;
+                    cpt.save(function (err) {
+                        if (err) {
+                            console.log("Erreur de bd concernant les compteurs MEMBRE_CPT_ID: " + err);
+                            res.status(400).end();
+                            return;
+                        }
+                    });
+                }
+                // membre._id est la dernière sequence du compteur membres.
+                membre._id = cpt.seq;
+                membre.nom_util = req.body.nom_util;
+                membre.courriel = req.body.courriel;
+                membre.mot_passe = bcrypt.hashSync(req.body.mot_passe,10);
+            // Enregistrement du nouveau membre
+            membre.save(function (err) {
+               // MembreModel.create(userData,function (err,membre) {
+                if (err) {
+                    console.log("Erreur pendant la création du membre: " + err);
+                    res.status(400).end();
+                    return;
+                }
+                //
+             // On obtient le membre de la base des données avec seulement les champs nécessaires pour le retour JSON
+             MembreModel.findById(membre._id).select('-collections_crees -collections_invitees -lieux_non_classes -__v -mot_passe').exec(function (err, resultat) {
+                // res.location(req.protocol + '://' + req.get('host') + req.originalUrl + membre._id);
+                 res.status(201).json(resultat);
+                 return;
+             });
+               
+            });
+            
+            });
+
+        });
+    })
+
+    // Méthode HTTP non permise
+    .all(function (req, res) {
+        console.log('Méthode HTTP non permise.');
+        res.status(405).end();
+    });
+
+//------------Fin création membre----------------- 
 //Route pour retourner ou enregistrer
 //un certain membre
 //============================
 routerApi.route('/membres/:noMem')
     .get(function (req, res) {
         //Vérification des accès
-        if (req.params.noMem !== req.jeton.membre_id)
+        //if (req.params.noMem !== req.jeton.membre_id)
+       //if (parseInt(req.params.noMem) !== req.token.membre_id)
+       if (parseInt(req.params.noMem) !== req.token.membre_id)
         {
         console.log('Accès non autorisé');
         res.status(401).end();
@@ -115,101 +235,6 @@ routerApi.route('/membres/:noMem')
             }
         });
     })
-    // Création d'un nouveau membre.
-    .post(function (req, res) {
-        //Vérification des accès
-        if (req.params.noMem !== req.jeton.membre_id)
-        {
-        console.log('Accès non autorisé');
-        res.status(401).end();
-        return;
-        }
-        console.log("Creation d'un nouveau membre");
-
-        if (req.body.mot_passe === null || req.body.courriel === null ||req.body.nom_util === null ) {
-            console.log("Erreur, nom, mot de passe et courriel sont requis.");
-            res.status(400).end();
-            return;
-        }
-
-        
-
-        if (req.body.nom_util.trim().length === 0 || req.body.courriel.trim().length === 0 || req.body.mot_passe.trim().length === 0) {
-            console.log("Erreur, nom,courriel et mot de passe doivent être re");
-            res.status(400).end();
-            return;
-        }
-         
-
-        if (typeof (req.body.nom_util) === 'undefined' || typeof (req.body.courriel) === 'undefined' || typeof (req.body.mot_passe) === 'undefined') {
-            console.log("Erreur, nom, mot de passe et courriel sont requis.");
-            res.status(400).end();
-            return;
-        }
-        // On verifie si le membre existe deja
-        MembreModel.findOne({
-            'nom_util': req.body.nom_util
-        }, function (err, memReponse) {
-            // Si le nom dèutilisateur existe deja dans la base des donnees, on retourne un erreur.
-            if (memReponse !== null) {
-                console.log("Erreur, membre existant");
-                res.status(400).end();
-                return;
-            }
-            var membre = new MembreModel();
-            // On met l'ID du membre à zéro par default
-            membre._id = 0;
-            CompteurModel.findByIdAndUpdate({
-                _id: MEMBRE_CPT_ID
-            }, {
-                $inc: {
-                    seq: 1
-                }
-            }, {
-                "upsert": true,
-                "new": true
-            }, function (err, cpt) {
-                if (err) {
-                    console.log("Erreur de base des données pour la gestion du compteurs COMPTEUR_ID_MEMBRE: " + err);
-                    res.status(400).end();
-                    return;
-                }
-                // Si le compteur est nul ça veut dire que c'est la première fois
-                // qu'on l'utilise, donc on doit l'initialiser.    
-                if (cpt === null) {
-                    cpt = new CompteurModel();
-                    cpt._id = MEMBRE_CPT_ID;
-                    cpt.seq = 1;
-                    cpt.save(function (err) {
-                        if (err) {
-                            console.log("Erreur de base des donnees pour la creation du compteur COMPTEUR_ID_MEMBRE: " + err);
-                            res.status(400).end();
-                            return;
-                        }
-                    });
-                }
-                // On assigne l'ID du membre selon la dernière séquence du compteur MEMBRE
-                membre._id = cpt.seq;
-            });
-            membre.nom_util = req.body.nom_util;
-            membre.courriel = req.body.courriel;
-            membre.mot_passe = req.body.mot_passe;
-            // On enregistre le nouveau membre dans la base des données
-            membre.save(function (err) {
-                if (err) {
-                    console.log("Erreur lors de la création du membre: " + err);
-                    res.status(400).end();
-                    return;
-                }
-                // On obtient le membre de la base des données avec seulement les champs nécessaires pour le retour JSON
-                MembreModel.findById(membre._id).select('-collections -col_ext_accessibles -lieux_non_classes -__v -mot_passe').exec(function (err, memReponse) {
-                    res.location(req.protocol + '://' + req.get('host') + req.originalUrl + membre._id);
-                    res.status(201).json(memReponse);
-                    return;
-                });
-            });
-        });
-    })
 
     //Méthode HTTP non permise
     .all(function (req, res) {
@@ -228,7 +253,7 @@ routerApi.route('/membres/:mem_id/lieux_non_classes')
     // Création d'un nouveau lieu.
     .post(function (req, res) {
    //Vérification des accès
-   if (req.params.mem_id !== req.jeton.membre_id)
+   if (parseInt(req.params.mem_id) !== req.token.membre_id)
    {
    console.log('Accès non autorisé');
    res.status(401).end();
@@ -318,12 +343,12 @@ routerApi.route('/membres/:mem_id/lieux_non_classes/:lieu_id')
     .delete(function (req, res) {
       
         //Vérification des accès
-   if (req.params.mem_id !== req.jeton.membre_id)
-   {
-   console.log('Accès non autorisé');
-   res.status(401).end();
-   return;
-   }
+        if (parseInt(req.params.mem_id) !== req.token.membre_id)
+        {
+        console.log('Accès non autorisé');
+        res.status(401).end();
+        return;
+        }
         // Récuppération  du membre .
         MembreModel.findById(req.params.mem_id, function (err, membre) {
             if (err) {
@@ -391,12 +416,12 @@ routerApi.route('/membres/:mem_id/lieux_non_classes/:lieu_id')
 .put(function (req, res) {
         
  //Vérification des accès
- if (req.params.mem_id !== req.jeton.membre_id)
- {
- console.log('Accès non autorisé');
- res.status(401).end();
- return;
- }
+ if (parseInt(req.params.mem_id) !== req.token.membre_id)
+        {
+        console.log('Accès non autorisé');
+        res.status(401).end();
+        return;
+        }
  // Récupération du membre en question:
 MembreModel.findById(req.params.mem_id, function (err, membre) {
     if (err) {
@@ -450,6 +475,7 @@ MembreModel.findById(req.params.mem_id, function (err, membre) {
 
     // Méthode HTTP non permise
     .all(function (req, res) {
+        'use strict';
         console.log('Méthode HTTP non permise.');
         res.status(405).end();
     });
@@ -463,12 +489,12 @@ routerApi.route('/membres/:mem_id/collections/:col_id/lieux/:lieu_id')
 
     .put(function (req, res) {
        //Vérification des accès
-   if (req.params.mem_id !== req.jeton.membre_id)
-   {
-   console.log('Accès non autorisé');
-   res.status(401).end();
-   return;
-   }
+       if (parseInt(req.params.mem_id) !== req.token.membre_id)
+       {
+       console.log('Accès non autorisé');
+       res.status(401).end();
+       return;
+       }
         // Vérification si le membre existe.
         MembreModel.findById(req.params.mem_id, function (err, membre) {
             if (err) {
@@ -563,12 +589,12 @@ routerApi.route('/membres/:mem_id/collections/:col_id/lieux/:lieu_id')
     //-----------------------------------------------------
     .delete(function (req, res) {
          //Vérification des accès
-        if (req.params.mem_id !== req.jeton.membre_id)
-        {
-        console.log('Accès non autorisé');
-        res.status(401).end();
-        return;
-        }
+         if (parseInt(req.params.mem_id) !== req.token.membre_id)
+         {
+         console.log('Accès non autorisé');
+         res.status(401).end();
+         return;
+         }
         // Vérification si le membre existe.
         MembreModel.findById(req.params.mem_id, function (err, membre) {
             if (err) {
@@ -650,14 +676,14 @@ routerApi.route('/membres/:mem_id/collections')
     //d'un membre identifié par son id.
     
     .get(function (req, res) {
-        console.log('Accès non autorisé');
+
          //Vérification des accès
-   if (req.params.mem_id !== req.jeton.membre_id)
-   {
-   console.log('Accès non autorisé');
-   res.status(401).end();
-   return;
-   }
+         if (parseInt(req.params.mem_id) !== req.token.membre_id)
+         {
+         console.log('Accès non autorisé');
+         res.status(401).end();
+         return;
+         }
         // Vérification si le membre existe.
         MembreModel.findById(req.params.mem_id, function (err, membre) {
             if (err) {
@@ -688,12 +714,12 @@ routerApi.route('/membres/:mem_id/collections')
     //-------------------------------------------
     .post(function (req, res) {
          //Vérification des accès
-            if (req.params.mem_id !== req.jeton.membre_id)
-            {
-            console.log('Accès non autorisé');
-            res.status(401).end();
-            return;
-            }
+         if (parseInt(req.params.mem_id) !== req.token.membre_id)
+         {
+         console.log('Accès non autorisé');
+         res.status(401).end();
+         return;
+         }
         // Récupération du membre en question (vérification).
         MembreModel.findById(req.params.mem_id, function (err, membre) {
             if (err) {
@@ -760,6 +786,7 @@ routerApi.route('/membres/:mem_id/collections')
     })
     // Méthode HTTP non permise
     .all(function (req, res) {
+        'use strict';
         console.log('Méthode HTTP non permise.');
         res.status(405).end();
     });
@@ -772,12 +799,12 @@ routerApi.route('/membres/:mem_id/collections')
 routerApi.route('/membres/:mem_id/collections/:collection_id')
     .delete(function (req, res) {
         //Vérification des accès
-            if (req.params.mem_id !== req.jeton.membre_id)
-            {
-            console.log('Accès non autorisé');
-            res.status(401).end();
-            return;
-            }
+        if (parseInt(req.params.mem_id) !== req.token.membre_id)
+        {
+        console.log('Accès non autorisé');
+        res.status(401).end();
+        return;
+        }
         // Récupération du membre en question.
         MembreModel.findById(req.params.mem_id, function (err, membre) {
             if (err) {
@@ -824,8 +851,7 @@ routerApi.route('/membres/:mem_id/collections/:collection_id')
         console.log('Méthode HTTP non permise.');
         res.status(405).end();
     });
-
- //---------------------------------------------
+//----------------------------------------------
 //Route pour retourner les collections dont on a
 //reçu le partage.
 //----------------------------------------------
@@ -833,12 +859,12 @@ routerApi.route('/membres/:mem_id/collectionsInvitees')
     
     .get(function (req, res) {
          //Vérification des accès
-   if (req.params.mem_id !== req.jeton.membre_id)
-   {
-   console.log('Accès non autorisé');
-   res.status(401).end();
-   return;
-   }
+         if (parseInt(req.params.mem_id) !== req.token.membre_id)
+         {
+         console.log('Accès non autorisé');
+         res.status(401).end();
+         return;
+         }
         // Vérification si le membre existe.
         MembreModel.findById(req.params.mem_id, function (err, membre) {
             if (err) {
@@ -862,14 +888,14 @@ routerApi.route('/membres/:mem_id/collectionsInvitees')
                 //Parcours du tableau des collections invitée
                 //pour chercher les collection créées par les membres
                 //dont le id est dans collections_invitees
-               
+                var maListe=[];
                 for (var j = 0; j < membre.collections_invitees.length; j++) {
                     var idMem = membre.collections_invitees[j].id_createur;
                     var idColl = membre.collections_invitees[j].id_collection;
-                   recupererCollectionsCrees(res, idMem, idColl);
-                 
+                  // recupererCollectionsCrees(res, idMem, idColl);
+                 maListe.push([idMem,idColl]);
                 }
-               
+                recupererCollectionsCrees(res,maListe);
             } else {
                 console.log(req.params.mem_id+ 'est un numéro d\'un membre qui n\'existe pas');
                 res.status(404).end();
@@ -878,6 +904,7 @@ routerApi.route('/membres/:mem_id/collectionsInvitees')
         });
        
     })
+
 
     // Méthode HTTP non permise
     .all(function (req, res) {
@@ -891,12 +918,12 @@ routerApi.route('/membres/:mem_id/collectionsInvitees')
 routerApi.route('/membres/:mem_id/collections/:col_id/partageAvec/:mem_invite_id')
     .post(function (req, res) {
         //Vérification des accès
-   if (req.params.mem_id !== req.jeton.membre_id)
-   {
-   console.log('Accès non autorisé');
-   res.status(401).end();
-   return;
-   }
+        if (parseInt(req.params.mem_id) !== req.token.membre_id)
+        {
+        console.log('Accès non autorisé');
+        res.status(401).end();
+        return;
+        }
         // Récupperation du membre en question.
         MembreModel.findById(req.params.mem_id, function (err, membre) {
             if (err) {
@@ -1005,6 +1032,7 @@ routerApi.route('/membres/:mem_id/collections/:col_id/partageAvec/:mem_invite_id
     })
     // Méthode HTTP non permise
     .all(function (req, res) {
+        'use strict';
         console.log('Méthode HTTP non permise.');
         res.status(405).end();
     });
@@ -1015,40 +1043,49 @@ routerApi.route('/membres/:mem_id/collections/:col_id/partageAvec/:mem_invite_id
 //******************************************************** */
 
 
+
+
 //Fonction pour récuperer le membre créateur de la collection
 //invité et afficher les collections concernées.
-function recupererCollectionsCrees(res, mem_id, col_id) {
+function recupererCollectionsCrees(res,lstMemColl) {
     var uneCollection = new CollectionCreeModel();
-   //tableau pour stocker les collections trouvées:
-    var lstCollectionsInvitees = [];
+    var lstCollectionsInvitees=[];
     
-        MembreModel.findById(mem_id, function (err, membreInv) {
-        if (err) {
-            console.log('Erreur de la BD lors de la consulation du membre: ' + err);
-            res.status(400).end();
-        }
-         //Si le membre invitant existe
-        if (membreInv !== null) {
-             //On parcours ses collections créées
-             //Pour trouver celles qui nous sont partagées.
-          
-             for (var i = 0; i < membreInv.collections_crees.length; i++) {
+     lstMemColl.foreach(function(item){
 
-                if (membreInv.collections_crees[i]._id === parseInt(col_id)) {
-
-                    uneCollection = membreInv.collections_crees[i];
-                    lstCollectionsInvitees.push(uneCollection);
-                }
+        MembreModel.findById(item[0], function (err, membreInv) {
+            if (err) {
+                console.log('Erreur de la BD lors de la consulation du membre: ' + err);
+                res.status(400).end();
             }
-        
-            res.json(lstCollectionsInvitees);
-        } else {
-            console.log('Erreur de la BD lors de la consulation du membre: ' + err);
-            res.status(400).end();
-        }
-    });
+             //Si le membre invitant existe
+            if (membreInv !== null) {
+                console.log('Le membre existe');
+                 //On parcours ses collections créées
+                 //Pour trouver celles qui nous sont partagées.
+              
+                 for (var i = 0; i < membreInv.collections_crees.length; i++) {
     
+                    if (membreInv.collections_crees[i]._id === parseInt(item[1])) {
+    
+                        uneCollection = membreInv.collections_crees[i];
+                        lstCollectionsInvitees.push(uneCollection);
+                    }
+                }
+            
+               
+             
+            } else {
+                console.log('Erreur de la BD lors de la consulation du membre: ' + err);
+                res.status(400).end();
+            }
+        });
+     });
+     res.json(lstCollectionsInvitees);
 }
+    
+
+
 
 
 //Fonction pour trouver un membre et supprimer le partage
@@ -1087,34 +1124,10 @@ function supprimerCollectionsInvitees(res, mem_id, col_id) {
 }
 
 
-function verifierAuthentification(req, callback) {
-    var auth = req.headers.Authorization || req.headers.authorization;
-    if (!auth) {
-    // Pas de jeton donc pas connecté.
-    callback(false, null);
-    } else {
-    // Structure de l'en-tête "Authorization" : "Bearer jeton-jwt"
-    var authArray = auth.split(' ');
-    if (authArray.length !== 2) {
-    // Mauvaise structure pour l'en-tête "Authorization".
-    callback(false, null);
-    } else {
-    // Le jeton est après l'espace suivant "Bearer".
-    var jetonEndode = authArray[1];
-    // Vérification du jeton.
-    jwt.verify(jetonEndode, req.app.get('jwt-secret'), function (err, jetonDecode) {
-    //jwt.verify(jetonEndode, 'config', function (err, jetonDecode) {
-    if (err) {
-    // Jeton invalide.
-    callback(false, null);
-    } else {
-    // Jeton valide.
-    callback(true, jetonDecode);
-    }
-    });
-    }
-    }
-    }
+
+
+
+
    
     
 // Rendre l'objet router disponible de l'extérieur.

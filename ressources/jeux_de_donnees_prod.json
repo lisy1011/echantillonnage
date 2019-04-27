@@ -5,7 +5,7 @@
     "collections_crees": [],
     "lieux_non_classes": [],
     "collections_invite": [],
-    "mot_passe": "8C6976E5B5410415BDE908BD4DEE15DFB167A9C873FC4BB8A81F6F2AB448A918",
+    "mot_passe": "$2b$10$srMbVuyBhy4ISKBquo.3zeVjudcTJrkxrPaz9hbr5qlgtTxITqAYm",
     "__v": 0
 }
 {
@@ -213,8 +213,8 @@
             "id_collection": "4"
         }
     ],
-    "mot_passe": "6025E955173E3735681BB473587DA7E85140EADE8D4398A366EC01F59EBA2834",
-    "__v": 1
+    "mot_passe": "$2b$10$g5U7gx9v3LV4Tf5i87C5nu92tALtqpvUnEapCxTRquQb9eo.gEB4S",
+    "__v": 0
 }
 {
     "_id": 2,
@@ -420,8 +420,8 @@
             "id_collection": 4
         }
     ],
-    "mot_passe": "2A18C4B747DDC57AE267F81709473BAC4D3FCEF623E85014A0ECD98BB19AE699",
-    "__v": 2
+    "mot_passe": "$2b$10$88lsh.yBH0HFy5jKgwOXFuODHoAUbkhksELYfBgSLpi/cKc4885Sy",
+    "__v": 0
 }
 {
     "_id": 3,
@@ -524,7 +524,7 @@
             "id_collection": 5
         }
     ],
-    "mot_passe": "626DD0C20829AF05A48D6DDE7E77F50F4E537729451598ABE515A80010B28816",
+    "mot_passe": "$2b$10$Gj3uAeBAtGSlBDIwS71tLuadxC1ysRfhvYcPSFovn4x2jTciSQ9jC",
     "__v": 3
 }
 {
@@ -606,6 +606,6 @@
             "id_collection": 5
         }
     ],
-    "mot_passe": "4240EA104552691E8B8FF7E870E84477E31E4179DFB0961C39909CBC387B2AB4",
+    "mot_passe": "$2b$10$srMbVuyBhy4ISKBquo.3zeVjudcTJrkxrPaz9hbr5qlgtTxITqAYm",
     "__v": 4
 }

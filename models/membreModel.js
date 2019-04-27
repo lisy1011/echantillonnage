@@ -2,7 +2,8 @@
 
 // ORM Mongoose.
 var mongoose = require('mongoose');
-
+//Pour crypter le mot de passe
+var bcrypt = require('bcrypt');
 // Classe pour les schéma Mongoose.
 var Schema = mongoose.Schema;
 
@@ -108,6 +109,92 @@ var MembreSchema = new Schema({
     
 });
 
+//authenticate input against database
+var Membre = mongoose.model('Membre', MembreSchema);
+
+MembreSchema.statics.authenticate = function (courriel, pass, callback) {
+    Membre.findOne({ courriel: courriel })
+      .exec(function (err, membre) {
+        if (err) {
+          return callback(err);
+        } else if (!membre) {
+          err = new Error('Utilisateur non enregistré.');
+          err.status = 401;
+          return callback(err);
+        }
+        bcrypt.compare(pass, membre.mot_passe, function (err, result) {
+          if (result === true) {
+            return callback(null, membre);
+          } else {
+            return callback();
+          }
+        });
+      });
+  };
+  
+  //hashing a password before saving it to the database
+  /*MembreSchema.pre('save', function (next) {
+    var membre = this;
+    bcrypt.hash(membre.mot_passe, 10, function (err, hash) {
+      if (err) {
+        return next(err);
+      }
+      membre.mot_passe = hash;
+      next();
+    });
+  });*/
+
+
+
+ MembreSchema.pre('save',true, function(next) {
+    var membre = this;
+
+    // only hash the password if it has been modified (or is new)
+    if (!membre.isModified('mot_passe')) return next();
+
+    // generate a salt
+    bcrypt.genSalt(10, function(err, salt) {
+        if (err) return next(err);
+
+        // hash the password using our new salt
+        bcrypt.hash(membre.mot_passe, salt, function(err, hash) {
+            if (err) return next(err);
+
+            // override the cleartext password with the hashed one
+            membre.mot_passe = hash;
+            next();
+        });
+    });
+});
+
+  
+  /*MembreSchema.pre('save', function (next) {
+    
+    bcrypt.hash(this.mot_passe, 10, function (err, hash) {
+      if (err) {
+        return next(err);
+      }
+      this.mot_passe = hash;
+      next();
+    });
+  });*/
+
+  /**
+* This is the middleware, It will be called before saving any record
+*/
+/*MembreSchema.pre('save', function(next) {
+  // check if password is present and is modified.
+  if ( this.mot_passe && this.isModified('mot_passe') ) {
+  // call your hashPassword method here which will return the hashed password.
+  this.mot_passe = bcrypt.hash(this.mot_passe);
+  }
+  // everything is done, so let's call the next callback.
+  next();
+  });*/
+
+
+
+
 // Rendre le modèle Coordonnee disponible de l'extérieur.
 module.exports.CoordonneeModel = mongoose.model('Coordonnee', CoordonneeSchema);
 
@@ -122,6 +209,7 @@ module.exports.CollectionInviteModel = mongoose.model('CollectionInvite', Collec
 
 // Rendre le modèle Membre disponible de l'extérieur.
 module.exports.MembreModel = mongoose.model('Membre', MembreSchema);
+
 
 
 
