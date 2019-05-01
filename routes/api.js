@@ -1,63 +1,30 @@
 'use strict';
 var express = require('express');
 var app = express();
+
+// Paramètres de configuration généraux.
+var config = require('../config');
+
+// Ajout d'une variable globale à l'application.
+app.set('jwt-secret', config.secret);
+
 // Router pour l'API REST.
 var routerApi = express.Router();
 var jwt = require('jsonwebtoken');
+
 //Pour crypter le mot de passe
 var bcrypt = require('bcrypt');
+
 // ORM Mongoose.
 var mongoose = require('mongoose');
 var async = require('async');
+
 // Connexion à MongoDB avec Mongoose.
 mongoose.connect('mongodb://localhost:27017/jeu_de_donnees', {
     //useMongoClient: true,
     useNewUrlParser: true,
     poolSize: 10
 });
-
-
-
-// Ajout d'un middleware qui intercepte toutes les requêtes.
-routerApi.use(function (req, res, next) {
-    // Validation du token.
-    var auth = req.headers.Authorization || req.headers.authorization;
-   if(req.url!=='/membres'){
-    if (!auth) {
-        // Pas de token (donc, pas connecté).
-        res.status(401).end();
-    } else {
-        // Structure de l'en-tête "Authorization" : "Bearer jwt"
-        var authArray = auth.split(' ');
-        if (authArray.length !== 2) {
-            // Mauvaise structure pour l'en-tête "Authorization".
-            res.status(401).end();
-        } else {
-            // Le token est après l'espace suivant "Bearer".
-            var token = authArray[1];
-            // Pour le déboggage.
-            console.log('Token  = ' + token);
-
-            // Vérification du token.
-            jwt.verify(token, req.app.get('jwt-secret'), function (err, tokenDecoded) {
-                if (err) {
-                    // Token invalide.
-                    return res.status(401).end();
-                } else {
-                    // Token valide.
-                    // Sauvegarde du jeton décodé dans la requête pour usage ultérieur.
-                    req.token = tokenDecoded;
-                    // Poursuite du traitement de la requête.
-                    next();
-                }
-            });
-        }
-    }
-} else {
-    next();
-}//fin test
-});
-
 
 // Modèle Mongoose concernant les Coordonnées d'un.
 var CoordonneeModel = require('../models/membreModel').CoordonneeModel;
@@ -81,8 +48,45 @@ var MEMBRE_CPT_ID = 0;
 var COLL_CPT_ID = 1;
 var LIEU_CPT_ID = 2;
 
+// Ajout d'un middleware qui intercepte toutes les requêtes.
+routerApi.use(function (req, res, next) {
+    // Validation du token.
+    var auth = req.headers.Authorization || req.headers.authorization;
+   if(req.url!=='/membres',req.url!=='/connexion'){
+    if (!auth) {
+        // Pas de token (donc, pas connecté).
+        res.status(401).end();
+    } else {
+        // Structure de l'en-tête "Authorization" : "Bearer jwt"
+        var authArray = auth.split(' ');
+        if (authArray.length !== 2) {
+            // Mauvaise structure pour l'en-tête "Authorization".
+            res.status(401).end();
+        } else {
+            // Le token est après l'espace suivant "Bearer".
+            var token = authArray[1];
+            // Pour le déboggage.
+            console.log('Token  = ' + token);
 
-
+            // Vérification du token.
+            jwt.verify(token, app.get('jwt-secret'), function (err, tokenDecoded) {
+                if (err) {
+                    // Token invalide.
+                    return res.status(401).end();
+                } else {
+                    // Token valide.
+                    // Sauvegarde du jeton décodé dans la requête pour usage ultérieur.
+                    req.token = tokenDecoded;
+                    // Poursuite du traitement de la requête.
+                    next();
+                }
+            });
+        }
+    }
+} else {
+    next();
+}//fin test
+});
 
 //Racine de l'API.
 routerApi.get('/', function (req, res) {
@@ -92,8 +96,60 @@ routerApi.get('/', function (req, res) {
     res.end('L\'API fonctionne bien !');
 });
 
+/*********************************************** */
+//*******************Connexion********************* */
+//*********************************************** */
+//---------------CONNEXION D'UN MEMBRE------------ 
+// ==================================
+routerApi.route('/connexion')
+.post( function (req, res) {
+    // trouver le membre
+    MembreModel.findOne({
+        nom_util: req.body.nom_util
+    }, function (err, membre) {
 
+        if (!membre) {
+            res.json({
+                success: false,
+                message: 'Authentication Échouée. Membre non trouvé.'
+            });
+        } else if (membre) {
+            //compare les passwords 
+            bcrypt.compare(req.body.mot_passe, membre.mot_passe, function (err, comparaison) {
+                if (comparaison) {
+                    // Passwords match
+                    var payload = {
+                        membre_id: membre._id,
+                        membre_nom: membre.nom_util,
+                        membre_courriel: membre.courriel
+                    };
+                    var jwtToken = jwt.sign(payload, app.get('jwt-secret'), {
+                        expiresIn: 86400 // Expiration en secondes (24 heures).
+                        //expiresIn: 10 // Permet de vérifier que le jeton expire très rapidement.
+                    });
 
+                    // réponse
+                  /*  res.json({
+                        success: true,
+                        mem_id: membre._id,
+                        message: 'Enjoy your token!!!!',
+                        token: jwtToken
+                    });*/
+                    res.sendFile('accueil.html',{root: "public"});
+                } else {
+                    // Passwords match pas
+                    res.json({
+                        success: false,
+                        message: 'Authentication failed. Wrong password.'
+                    });
+                    res.status(400).end();
+                }
+            });
+
+        }
+
+    });
+});
 
 //*********************************************** */
 //*******************Membres********************* */
@@ -888,14 +944,43 @@ routerApi.route('/membres/:mem_id/collectionsInvitees')
                 //Parcours du tableau des collections invitée
                 //pour chercher les collection créées par les membres
                 //dont le id est dans collections_invitees
-                var maListe=[];
-                for (var j = 0; j < membre.collections_invitees.length; j++) {
-                    var idMem = membre.collections_invitees[j].id_createur;
-                    var idColl = membre.collections_invitees[j].id_collection;
-                  // recupererCollectionsCrees(res, idMem, idColl);
-                 maListe.push([idMem,idColl]);
+                var maListe = [];
+                var lstCollInvitees=[];
+                for (var i = 0; i < membre.collections_invitees.length; i++) {
+                    lstCollInvitees.push(membre.collections_invitees[i]);
                 }
-                recupererCollectionsCrees(res,maListe);
+                lstCollInvitees.forEach(function (collInv) {
+                    // Appels asynchrones pour consulter la bd
+                    maListe.push(function (callback) {
+                        
+                        MembreModel.find({
+                            _id: collInv.id_createur,
+                            'collections_crees._id': collInv.id_collection
+                        }, {
+                            'collections_crees._id.$': collInv.id_collection
+                        }, (function (err, memInv) {
+                            if (err) {
+                                callback("Erreur en cherchant le membre dont le id est" + collInv.id_createur + ": " + err);
+                            }
+                            if (memInv.length > 0) {
+                                callback(null, memInv[0].collections_crees[0]);
+                            } else {
+                                callback("Erreur en cherchant le membre dont le id est" + collInv.id_createur + ", le membre n'existe pas.");
+                            }
+                        }));
+                    });
+                });
+                // Affichage du résultat:
+                async.parallel(maListe, function (err, result) {
+                    if (err) {
+                        console.log("Erreur en cherchant les collections: " + err);
+                        res.status(400).end();
+                        return;
+                    }
+                    res.status(200).json(result).end();
+                    return;
+                });
+
             } else {
                 console.log(req.params.mem_id+ 'est un numéro d\'un membre qui n\'existe pas');
                 res.status(404).end();

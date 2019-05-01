@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<!-- Syntaxe: HTML5 Polyglot, Conformité: HTML5 et XML (XHTML5) -->
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="fr" xml:lang="fr">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Echantillonnage - Maps</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <style>
+        html {
+            height: 100%;
+        }
+
+        body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #carte-canvas {
+            height: 100%;
+			width: 100%;
+            background-color: #ccc;
+        }
+    </style>
+
+    <!-- Chargement de l'API Google Map API v3.
+         Note : La clé (paramètre "key") est manquante. -->
+    <!-- <script src="https://maps.googleapis.com/maps/api/js"></script> -->
+    <!-- Utiliser cette version avec votre clé d'API. -->
+    <!--<script src="https://maps.googleapis.com/maps/api/js?key=VOTRE CLE"></script>-->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCS_G232oK0-bg6dTxACSIFrdgrZ54frxA"></script>
+
+    <script>
+        // Référence à la carte Google (variable globale).
+        var carte;
+        // Position par défaut (Beauport).
+        var latDefaut = 46.876423;
+        var longDefaut = -71.190285;
+        // Création de l'objet "LatLng" correspondant à la position par défaut du centre de la carte. 
+        var posDefaut = new google.maps.LatLng(latDefaut, longDefaut);
+
+        function initCarte() {
+
+            // Options de la carte (syntaxe JS Object Literal).
+            var optionsCarte = {
+                "center": posDefaut,
+                "zoom": 14,
+                "mapTypeId": google.maps.MapTypeId.ROADMAP
+            };
+
+            // Création de la carte Google (avec les options)
+            // tout en spécifiant dans quel élément HTML elle doit être affichée.
+            carte = new google.maps.Map(document.getElementById("carte-canvas"), optionsCarte);
+
+            // Est-ce que le navigateur supporte la géolocalisation ?
+            if (typeof navigator.geolocation !== "undefined") {
+                console.log('Le navigateur supporte la géolocalisation.');
+                // Tentative de récupération de la position de l'utilisateur;
+                // une autorisation de celui-ci est nécessaire.
+                // Si l'utilisateur l'autorise, la fonction "getCurrentPositionSuccess" est appelée;
+                // autrement, la fonction "getCurrentPositionError" est appelée (c'est un appel *asynchrone*).
+                navigator.geolocation.getCurrentPosition(getCurrentPositionSuccess, getCurrentPositionError, {});
+            } else {
+                // Pas de support de la géolocalisation.
+                console.log('Le navigateur NE supporte PAS la géolocalisation.');
+                // Utilisation de la position par défaut.
+                console.log('Utilisation de la position par défaut.');
+            }
+
+        } // Fin de la fonction "initCarte"
+
+        // Fonction appelée lors du succès de la récupération de la position de l'utilisateur.
+        function getCurrentPositionSuccess(position) {
+            // Utilisation de la position de l'utilisateur.
+            console.log('Position obtenue : ' + position.coords.latitude + ', ' + position.coords.longitude);
+            var positionInit = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
+            // Centrage de la carte sur la bonne coordonnée.
+            carte.setCenter(positionInit);
+        }
+
+        // Fonction appelée lors refus de la récupération de la position de l'utilisateur.
+        function getCurrentPositionError(erreur) {
+            // Utilisation de la position par défaut.
+            console.log('Utilisation de la position par défaut.');
+        }
+
+        // Appel de la fonction au chargement de la page (utilisation de l'API de Google).
+        google.maps.event.addDomListener(window, 'load', initCarte);
+
+        // Note: Pour suivre le déplacement d'un utilisateur sur appareil mobile,
+		// utilisez la méthode "watchPosition".
+		
+
+ </script>
+	<script type="text/javascript" src="js/chargerCollections.js"></script>
+</head>
+
+<body>
+	<div class="comboEtDecon">
+			<div id="deconn"><a href="">Déconnexion</a></div>
+			<div>
+		<form action="/action_page.php" class="comboCollections">
+		<label for "collections">Collections: </label>
+		<select name="collections" id="collections">
+		  <option value="selectionner">Selectionner</option>
+		</select>
+	  </form>
+	</div>
+	</div>
+    <!--
+        Une division servant afficher la carte et occupant 100% de la largeur
+        et de la hauteur de la page ou du "viewport" (appareil mobile).
+    -->
+    <div id="carte-canvas"></div>
+
+</body>
+
+</html>
