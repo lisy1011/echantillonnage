@@ -103,17 +103,22 @@ routerApi.get('/', function (req, res) {
 // ==================================
 routerApi.route('/connexion')
 .post( function (req, res) {
+    c
     // trouver le membre
     MembreModel.findOne({
         nom_util: req.body.nom_util
     }, function (err, membre) {
 
+        console.log('dddddddd');
+        
         if (!membre) {
             res.json({
                 success: false,
                 message: 'Authentication Échouée. Membre non trouvé.'
             });
         } else if (membre) {
+       
+    
             //compare les passwords 
             bcrypt.compare(req.body.mot_passe, membre.mot_passe, function (err, comparaison) {
                 if (comparaison) {

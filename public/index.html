@@ -32,7 +32,7 @@ License URL: http://creativecommons.org/licenses/by/3.0/
 				<h3>Connexion</h3>
 				
 				<div class="login-form">
-					<form action="/api/connexion" method="post">
+					<form action="/connexion" method="post">
 						<input type="text" name="nom_util" placeholder="Nom d'utilisateur" required="">
 						<input type="password" name="mot_passe" placeholder="Mot de passe" required="">
 						<div class="tp">
@@ -47,7 +47,7 @@ License URL: http://creativecommons.org/licenses/by/3.0/
 				<h3>S'inscrire</h3>
 				
 				<div class="login-form">
-					<form id="login" action="/api/membres" method="post" onsubmit="event.preventDefault(); validerFormulaire();">
+					<form id="login" action="/membres" method="post" onsubmit="event.preventDefault(); validerFormulaire();">
 						<input type="text" name="courriel" placeholder="Courriel" required="">
 						<input type="text" name="nom_util" placeholder="Nom d'utilisateur" required="">
 						<input type="password" name="mot_passe" placeholder="Mot de passe" id="mot_passe" required="" >

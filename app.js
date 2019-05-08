@@ -15,9 +15,9 @@ var routerBase = require('./routes/base');
 var routerApi = require('./routes/api');
 
 // Ajout des routers à l'application.
-app.use('/', routerBase);
+//app.use('/', routerBase);
 // L'API REST a comme route de base '/api'.
-app.use('/api', routerApi);
+app.use('/', routerApi);
 
 var port = process.env.PORT || 8090;
 app.listen(port, function () {
