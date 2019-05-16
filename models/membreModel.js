@@ -104,9 +104,7 @@ var MembreSchema = new Schema({
         type: String,
         trim: true,
         required: true
-    },
-    
-    
+    },  
 });
 
 //authenticate input against database
@@ -131,20 +129,6 @@ MembreSchema.statics.authenticate = function (courriel, pass, callback) {
         });
       });
   };
-  
-  //hashing a password before saving it to the database
-  /*MembreSchema.pre('save', function (next) {
-    var membre = this;
-    bcrypt.hash(membre.mot_passe, 10, function (err, hash) {
-      if (err) {
-        return next(err);
-      }
-      membre.mot_passe = hash;
-      next();
-    });
-  });*/
-
-
 
  MembreSchema.pre('save',true, function(next) {
     var membre = this;
@@ -166,34 +150,6 @@ MembreSchema.statics.authenticate = function (courriel, pass, callback) {
         });
     });
 });
-
-  
-  /*MembreSchema.pre('save', function (next) {
-    
-    bcrypt.hash(this.mot_passe, 10, function (err, hash) {
-      if (err) {
-        return next(err);
-      }
-      this.mot_passe = hash;
-      next();
-    });
-  });*/
-
-  /**
-* This is the middleware, It will be called before saving any record
-*/
-/*MembreSchema.pre('save', function(next) {
-  // check if password is present and is modified.
-  if ( this.mot_passe && this.isModified('mot_passe') ) {
-  // call your hashPassword method here which will return the hashed password.
-  this.mot_passe = bcrypt.hash(this.mot_passe);
-  }
-  // everything is done, so let's call the next callback.
-  next();
-  });*/
-
-
-
 
 // Rendre le modèle Coordonnee disponible de l'extérieur.
 module.exports.CoordonneeModel = mongoose.model('Coordonnee', CoordonneeSchema);

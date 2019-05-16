@@ -1,83 +1,37 @@
-<!--
-Author: W3layouts
-Author URL: http://w3layouts.com
-License: Creative Commons Attribution 3.0 Unported
-License URL: http://creativecommons.org/licenses/by/3.0/
--->
 <!DOCTYPE html>
-<html>
-<head>
-<title>Echantillonnage - Connexion</title>
-<!--Custom Theme files-->
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<meta name="keywords" content="Register Login Widget template Responsive, Login form web template,Flat Pricing tables,Flat Drop downs  Sign up Web Templates, Flat Web Templates, Login Signup Responsive web template, SmartPhone Compatible web template, free WebDesigns for Nokia, Samsung, LG, SonyEricsson, Motorola web design" />
-<script type="application/x-javascript"> addEventListener("load", function() { setTimeout(hideURLbar, 0); }, false); function hideURLbar(){ window.scrollTo(0,1); } </script>
-<!-- Custom Theme files -->
-<link href="css/style.css" rel="stylesheet" type="text/css" media="all" />
-<!--web-fonts-->
-<link href='//fonts.googleapis.com/css?family=Jura:400,300,500,600' rel='stylesheet' type='text/css'>
-<!--//web-fonts-->
-</head>
-<body>
-	<h1>Mes collections </h1>
-	<!-- main -->
-	<div class="main">
-		<!--login-profile-->
-		
-		<!--login-profile-->
-		<!--signin-form-->
-		<div class="w3">
-			<div class="signin-form profile">
-				<h3>Connexion</h3>
-				
-				<div class="login-form">
-					<form action="/connexion" method="post">
-						<input type="text" name="nom_util" placeholder="Nom d'utilisateur" required="">
-						<input type="password" name="mot_passe" placeholder="Mot de passe" required="">
-						<div class="tp">
-							<input type="submit" value="Envoyer">
-						</div>
-					</form>
-				</div>
-			</div>
-		</div>
-		<div class="agile">
-			<div class="signin-form profile">
-				<h3>S'inscrire</h3>
-				
-				<div class="login-form">
-					<form id="login" action="/membres" method="post" onsubmit="event.preventDefault(); validerFormulaire();">
-						<input type="text" name="courriel" placeholder="Courriel" required="">
-						<input type="text" name="nom_util" placeholder="Nom d'utilisateur" required="">
-						<input type="password" name="mot_passe" placeholder="Mot de passe" id="mot_passe" required="" >
-						<input type="password" name="mot_passeConf" placeholder="Confirmer mot de passe" id="mot_passeConf" required="">
-						<input type="submit" value="Enregistrer">
-						<p><span id="msg"></span></p>
-					</form>
-				</div>
-			</div>
-		</div>
-		<div class="clear"></div>
-		<!--//signin-form-->	
-	</div>
-	<div class="copyright">
-		<p> &copy; 2019 Projet web . Rabah | Anita | Olivier</p>
-	</div>	
+<!-- Syntaxe: HTML5 Polyglot, Conformité: HTML5 et XML (XHTML5) -->
 
-	<script type="text/javascript">
-		var passe = document.getElementById('mot_passe')
-		var passeConf = document.getElementById('mot_passeConf')
-		var form = document.getElementById('login')
-		function validerFormulaire(){
-			if(passe.value != passeConf.value){ 
-				//alert("Les mots de passe ne sont pas identiques.\nVeuillez réessayer!");
-				document.getElementById("msg").innerHTML="Les mots de passe ne sont pas identiques.\nVeuillez réessayer!"
-		  	} else {
-		  		form.submit()
-		  	}
-		}
-	</script>	
+<html xmlns="http://www.w3.org/1999/xhtml" lang="fr" xml:lang="fr">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Echantillonnage - Connexion</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+
+    <link rel="stylesheet" href="/css/styles.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <link rel="shortcut icon" type="image/png" href="../images/favicon.png"/>
+    
+  <!--<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCS_G232oK0-bg6dTxACSIFrdgrZ54frxA"
+    type="text/javascript"></script>-->
+   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBm2Fi12rIKDQMIecdQlD-IWi1EM4B_emk"type="text/javascript"></script>
+
+    <script type="text/javascript" src="js/index.js"></script>
+    <script type="text/javascript" src="js/authentification.js"></script>
+    <script type="text/javascript" src="js/carte.js"></script>
+    <script type="text/javascript" src="js/utils-ajax.js"></script>
+    <script type="text/javascript" src="js/menu.js"></script>
+
+</head>
+<body onLoad="init()">
+
+        <!--
+            Une division servant afficher la carte et occupant 100% de la largeur
+            et de la hauteur de la page ou du "viewport" (appareil mobile).
+        -->
+        <div id="carte-canvas"></div>
+        
 
 </body>
 </html>

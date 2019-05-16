@@ -1,7 +1,7 @@
 'use strict';
 var express = require('express');
 var app = express();
-
+//var session = require('express-session');
 // Paramètres de configuration généraux.
 var config = require('../config');
 
@@ -20,7 +20,7 @@ var mongoose = require('mongoose');
 var async = require('async');
 
 // Connexion à MongoDB avec Mongoose.
-mongoose.connect('mongodb://localhost:27017/jeu_de_donnees', {
+mongoose.connect('mongodb://localhost:27017/data-collections', {
     //useMongoClient: true,
     useNewUrlParser: true,
     poolSize: 10
@@ -52,7 +52,7 @@ var LIEU_CPT_ID = 2;
 routerApi.use(function (req, res, next) {
     // Validation du token.
     var auth = req.headers.Authorization || req.headers.authorization;
-   if(req.url!=='/membres',req.url!=='/connexion'){
+   if(req.url!=='/membres' && req.url!=='/connexion'){
     if (!auth) {
         // Pas de token (donc, pas connecté).
         res.status(401).end();
@@ -69,7 +69,8 @@ routerApi.use(function (req, res, next) {
             console.log('Token  = ' + token);
 
             // Vérification du token.
-            jwt.verify(token, app.get('jwt-secret'), function (err, tokenDecoded) {
+            //jwt.verify(token, req.app.get('jwt-secret'), function (err, tokenDecoded) {
+                jwt.verify(token, app.get('jwt-secret'), function (err, tokenDecoded) {
                 if (err) {
                     // Token invalide.
                     return res.status(401).end();
@@ -85,7 +86,7 @@ routerApi.use(function (req, res, next) {
     }
 } else {
     next();
-}//fin test
+}
 });
 
 //Racine de l'API.
@@ -103,22 +104,17 @@ routerApi.get('/', function (req, res) {
 // ==================================
 routerApi.route('/connexion')
 .post( function (req, res) {
-    c
     // trouver le membre
     MembreModel.findOne({
         nom_util: req.body.nom_util
     }, function (err, membre) {
 
-        console.log('dddddddd');
-        
         if (!membre) {
             res.json({
                 success: false,
                 message: 'Authentication Échouée. Membre non trouvé.'
             });
         } else if (membre) {
-       
-    
             //compare les passwords 
             bcrypt.compare(req.body.mot_passe, membre.mot_passe, function (err, comparaison) {
                 if (comparaison) {
@@ -132,15 +128,16 @@ routerApi.route('/connexion')
                         expiresIn: 86400 // Expiration en secondes (24 heures).
                         //expiresIn: 10 // Permet de vérifier que le jeton expire très rapidement.
                     });
-
+                    
                     // réponse
-                  /*  res.json({
+                   res.json({
                         success: true,
                         mem_id: membre._id,
+                        nom_util:membre.nom_util,
                         message: 'Enjoy your token!!!!',
                         token: jwtToken
-                    });*/
-                    res.sendFile('accueil.html',{root: "public"});
+                    });
+                   
                 } else {
                     // Passwords match pas
                     res.json({
@@ -266,12 +263,12 @@ routerApi.route('/membres')
 //Route pour retourner ou enregistrer
 //un certain membre
 //============================
-routerApi.route('/membres/:noMem')
+routerApi.route('/membres/:mem_id')
     .get(function (req, res) {
         //Vérification des accès
-        //if (req.params.noMem !== req.jeton.membre_id)
-       //if (parseInt(req.params.noMem) !== req.token.membre_id)
-       if (parseInt(req.params.noMem) !== req.token.membre_id)
+        //if (req.params.mem_id !== req.jeton.membre_id)
+       //if (parseInt(req.params.mem_id) !== req.token.membre_id)
+       if (parseInt(req.params.mem_id) !== req.token.membre_id)
         {
         console.log('Accès non autorisé');
         res.status(401).end();
@@ -279,7 +276,7 @@ routerApi.route('/membres/:noMem')
         }
         //verification du membre
         // Récuperation du membre en question.            
-        MembreModel.findById(req.params.noMem).select('-__v -mot_passe').exec(function (err, membre) {
+        MembreModel.findById(req.params.mem_id).select('-__v -mot_passe').exec(function (err, membre) {
             if (err) {
                 console.log('Erreur, en consultant la base de données.');
                 res.status(400).end();
@@ -287,8 +284,8 @@ routerApi.route('/membres/:noMem')
             }
 
             if (membre === null) {
-                console.log("Le membre no." + req.params.noMem + " n'existe pas dans la base de données.");
-                res.status(404).json("Le membre no." + req.params.noMem + " n'existe pas dans la base de données.").end();
+                console.log("Le membre no." + req.params.mem_id + " n'existe pas dans la base de données.");
+                res.status(404).json("Le membre no." + req.params.mem_id + " n'existe pas dans la base de données.").end();
                 return;
             } else {
                 //Si le membre existe
@@ -536,7 +533,7 @@ MembreModel.findById(req.params.mem_id, function (err, membre) {
 
     // Méthode HTTP non permise
     .all(function (req, res) {
-        'use strict';
+    
         console.log('Méthode HTTP non permise.');
         res.status(405).end();
     });
@@ -847,7 +844,7 @@ routerApi.route('/membres/:mem_id/collections')
     })
     // Méthode HTTP non permise
     .all(function (req, res) {
-        'use strict';
+        
         console.log('Méthode HTTP non permise.');
         res.status(405).end();
     });
@@ -1005,7 +1002,7 @@ routerApi.route('/membres/:mem_id/collectionsInvitees')
 
 
 //Permet de créer un partage de collection entre deux membres.
-routerApi.route('/membres/:mem_id/collections/:col_id/partageAvec/:mem_invite_id')
+/*routerApi.route('/membres/:mem_id/collections/:col_id/partageAvec/:mem_invite_id')
     .post(function (req, res) {
         //Vérification des accès
         if (parseInt(req.params.mem_id) !== req.token.membre_id)
@@ -1057,7 +1054,9 @@ routerApi.route('/membres/:mem_id/collections/:col_id/partageAvec/:mem_invite_id
                 //membre invité en question:
                 var partageExiste = false;
                 for (var k = 0; k < uneCollection.partagee_avec.length; k++) {
-                    if (uneCollection.partagee_avec[k] === parseInt(req.params.col_id)) {
+                    //if (uneCollection.partagee_avec[k] === parseInt(req.params.col_id)) {
+                        var numPartageAvec=parseInt(uneCollection.partagee_avec[k]);
+                        if (numPartageAvec === parseInt(req.params.mem_invite_id)){
                         partageExiste = true;
                         break;
                     }
@@ -1099,14 +1098,21 @@ routerApi.route('/membres/:mem_id/collections/:col_id/partageAvec/:mem_invite_id
                         //Enregistrement du id du membre invité
                         //dans la liste de partage du membre 
                         //créateur.
-                        uneCollection.partagee_avec.push(membreInvite._id);
+                       // uneCollection.partagee_avec.push(membreInvite._id);
+                       for (var i = 0; i < membre.collections_crees.length; i++) {
+                        if (membre.collections_crees[i] === uneCollection) {
+                            membre.collections_crees[i].partagee_avec.push(membreInvite._id);
+                            break;
+                        }
+                       }
                         res.status(200).json({
                             '_id': uneCollection._id,
                             'nom': uneCollection.nom,
                             'partage_avec': req.params.mem_invite_id
+                            
                         });
                         //Enregistrement des modifications: 
-                        membreInvite.save(function (err) {
+                        membre.save(function (err) {
                             if (err) {
                                 console.log('Erreur lors de la mise a jour des données du membre no : ' + req.params.mem_invite_id);
                                 res.status(400).end();
@@ -1122,7 +1128,140 @@ routerApi.route('/membres/:mem_id/collections/:col_id/partageAvec/:mem_invite_id
     })
     // Méthode HTTP non permise
     .all(function (req, res) {
-        'use strict';
+        
+        console.log('Méthode HTTP non permise.');
+        res.status(405).end();
+    });*/
+
+//Permet de créer un partage de collection entre deux membres.
+routerApi.route('/membres/:mem_id/collections/:col_id/partageAvec/:mem_invite_nom')
+    .post(function (req, res) {
+        //Vérification des accès
+        if (parseInt(req.params.mem_id) !== req.token.membre_id)
+        {
+        console.log('Accès non autorisé');
+        res.status(401).end();
+        return;
+        }
+        // Récupperation du membre en question.
+        MembreModel.findById(req.params.mem_id, function (err, membre) {
+            if (err) {
+                console.log("Erreur en tentant de consulter le membre: " + err);
+                res.status(400).end();
+                return;
+            }
+            //Si le membre est null
+            if (membre === null) {
+                console.log("Erreur, membre inexistant");
+                res.status(400).end();
+                return;
+            }
+            // Si le membre existe
+            else {
+                //Vérification, en premier lieu, si l'id de l'invité
+                //et celui du membre ne sont pas les mêmes
+                //un partage avec lui même ne marche pas.
+                if (parseInt(req.params.mem_id) === parseInt(req.params.mem_invite_nom)) {
+                    console.log("Erreur, vous ne pouvez pas partager la collection avec vous-même");
+                    res.status(400).end();
+                    return;
+                }
+
+                var uneCollection = null;
+                //Parcours de la liste des collections du membre
+                //pour vérifier si la collection existe:
+                for (var i = 0; i < membre.collections_crees.length; i++) {
+                    if (membre.collections_crees[i]._id === parseInt(req.params.col_id)) {
+                        uneCollection = membre.collections_crees[i];
+                        break;
+                    }
+                }
+                //Si la collection n'existe pas:
+                if (uneCollection === null || typeof (uneCollection) === 'undefined') {
+                    console.log("Erreur, cette collection n'\existe pas !");
+                    res.status(404).end();
+                    return;
+                }
+                //Vérification si le partage exsite déjà avec le
+                //membre invité en question:
+                var partageExiste = false;
+                for (var k = 0; k < uneCollection.partagee_avec.length; k++) {
+                    //if (uneCollection.partagee_avec[k] === parseInt(req.params.col_id)) {
+                        var numPartageAvec=parseInt(uneCollection.partagee_avec[k]);
+                        if (numPartageAvec === req.params.mem_invite_nom){
+                        partageExiste = true;
+                        break;
+                    }
+                }
+                if (partageExiste === true) {
+                    console.log("Erreur, la collection est déjà partagée avec ce membre");
+                    res.status(400).end();
+                    return;
+                }
+                if (partageExiste === false) {
+                    //Vérification si le membre avec lequel le partage doit être fait
+                    //(dont l'id est passé en paramètre) existe
+                    MembreModel.findOne({nom_util: req.params.mem_invite_nom}
+                        , function (err, membreInvite) {
+                        if (err) {
+                            console.log("Erreur lors de la consultation du membre: " + err);
+                            res.status(400).end();
+                            return;
+                        }
+
+                        if (membreInvite === null) {
+                            console.log("Erreur, le membre avec lequel vous voulez faire le partage n'existe pas.");
+                            res.status(400).end();
+                            return;
+                        }
+                        //Le membre invité existe,le partage n'existe pas
+                        //donc on crée la relation de partage
+                        var partage = new CollectionInviteModel();
+                        partage.id_createur = membre._id;
+                        partage.id_collection = uneCollection._id;
+                        membreInvite.collections_invitees.push(partage);
+                        //Enregistrement des modifications: 
+                        membreInvite.save(function (err) {
+                            if (err) {
+                                console.log('Erreur lors de la mise a jour des données du membre no : ' + req.params.mem_invite_nom);
+                                res.status(400).end();
+                                return;
+                            }
+                        });
+                        //Enregistrement du id du membre invité
+                        //dans la liste de partage du membre 
+                        //créateur.
+                       // uneCollection.partagee_avec.push(membreInvite._id);
+                       for (var i = 0; i < membre.collections_crees.length; i++) {
+                        if (membre.collections_crees[i] === uneCollection) {
+                            membre.collections_crees[i].partagee_avec.push(membreInvite._id);
+                            break;
+                        }
+                       }
+                        res.status(200).json({
+                            '_id': uneCollection._id,
+                            'nom': uneCollection.nom,
+                            'partage_avec': req.params.mem_invite_nom
+                            
+                        });
+                        //Enregistrement des modifications: 
+                        membre.save(function (err) {
+                            if (err) {
+                                console.log('Erreur lors de la mise a jour des données du membre no : ' + req.params.mem_invite_nom);
+                                res.status(400).end();
+                                return;
+                            }
+                        });
+
+                    });
+
+                }
+            }
+        });
+    })
+    // Méthode HTTP non permise
+    .all(function (req, res) {
+        
         console.log('Méthode HTTP non permise.');
         res.status(405).end();
     });

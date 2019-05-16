@@ -1,0 +1,351 @@
+@charset "UTF-8";
+
+html {
+  height: 100%;
+}
+
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+#carte-canvas {
+  height: 100%;
+  background-color: #ccc
+}
+
+/* The Modal (background) */
+.signin-form {
+  display: block;
+  /* Hidden by default */
+  position: fixed;
+  /* Stay in place */
+  z-index: 1;
+  /* Sit on top */
+  left: 0;
+  top: 0;
+  width: 100%;
+  /* Full width */
+  height: 100%;
+  /* Full height */
+  overflow: auto;
+  /* Enable scroll if needed */
+  background-color: rgb(0, 0, 0);
+  /* Fallback color */
+  background-color: rgba(0, 0, 0, 0.4);
+  /* Black w/ opacity */
+  padding-top: 60px;
+}
+
+/* Modal Content/Box */
+.login-form {
+  background-color: #fefefe;
+  margin: 5% auto 15% auto;
+  /* 5% from the top, 15% from the bottom and centered */
+  border: 1px solid #888;
+  width: 400px;
+  /* Could be more or less, depending on screen size */
+}
+
+h3 {
+  text-align: center;
+  font-size: 30px;
+  color: darkblue;
+}
+
+input[type=text],
+input[type=password],
+input[type=email] {
+  text-align: center;
+  width: 90%;
+  padding: 12px 20px;
+  margin: 8px 0;
+  display: inline-block;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+}
+
+.container {
+  padding: 16px;
+}
+
+#lien {
+  text-align: center;
+}
+
+#lien a:hover {
+  text-decoration: none;
+  color: #aaa;
+}
+
+.align1 {
+  text-align: center;
+  padding: 10px;
+}
+
+.align2 {
+  text-align: center;
+  padding: 14px 20px;
+  width: 50%;
+  font-size: 15px;
+}
+
+.globale {
+  text-align: center;
+}
+
+#btn {
+  text-align: center;
+  width: 100%;
+  font-size: 15px;
+}
+
+#btnEnregistrer {
+  float: left;
+}
+#btnInsc {
+  float: left;
+}
+
+#btnAnn {
+  float: left;
+}
+
+.erreur {
+  margin: 0px;
+  color: red;
+  text-align: center;
+}
+
+#menuPrinc {
+  font-size: 20px !important;
+}
+
+#collections,
+#lieux,
+#partagees {
+  overflow-y: scroll;
+  height: 150px;
+}
+
+.btn {
+  background-color: #36b0b6;
+  border: none;
+  color: white;
+  padding: 7px 11px;
+  font-size: 11px;
+  cursor: pointer;
+  float: right;
+  margin-left: 1px;
+  margin-right: 5px;
+  margin-bottom: 2px;
+}
+
+.btnEnregistrer {
+  background-color: grey;
+  color: white;
+  padding: 14px 20px;
+  margin: 8px 0;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+}
+
+.btnDeconn {
+  background-color: whitesmoke;
+  border: none;
+  color: black;
+  padding: 7px 10px;
+  font-size: 11px;
+  cursor: pointer;
+  float: right;
+  margin-left: 1px;
+  margin-right: 5px;
+}
+
+
+.btnPlus {
+  background-color: #36b0b6;
+  border: none;
+  color: white;
+  padding: 7px 10px;
+  font-size: 11px;
+  cursor: pointer;
+  float: right;
+  margin-bottom: 5px;
+  margin-left: 3px;
+}
+
+h4 {
+  text-align: center;
+}
+
+h4 input,
+p {
+  margin-left: 20px;
+  text-align: center;
+}
+
+a { 
+  cursor: pointer; 
+}
+
+#nomInput {
+  margin: 20px;
+}
+
+
+/*===================================================
+//***************Partie Menu*************************
+//===================================================
+@import url(http://fonts.googleapis.com/css?family=Lato:300,400,700);
+@charset "UTF-8";
+/* Base Styles */
+#cssmenu ul,
+#cssmenu li,
+#cssmenu a {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  line-height: 1;
+  font-family: 'Lato', sans-serif;
+}
+#cssmenu {
+  position:absolute;
+  top:10px;
+  border: 1px solid #133e40;
+  -webkit-border-radius: 5px;
+  -moz-border-radius: 5px;
+  -ms-border-radius: 5px;
+  -o-border-radius: 5px;
+  border-radius: 5px;
+  width: auto;
+  -moz-transform: translateX(27%);
+  -ms-transform: translateX(27%);
+  -webkit-transform: translateX(27%);
+  -o-transform: translateX(27%);
+  transform: translateX(27%);
+}
+#cssmenu ul {
+  zoom: 1;
+  background: #36b0b6;
+  background: -moz-linear-gradient(top, #36b0b6 0%, #2a8a8f 100%);
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #36b0b6), color-stop(100%, #2a8a8f));
+  background: -webkit-linear-gradient(top, #36b0b6 0%, #2a8a8f 100%);
+  background: -o-linear-gradient(top, #36b0b6 0%, #2a8a8f 100%);
+  background: -ms-linear-gradient(top, #36b0b6 0%, #2a8a8f 100%);
+  background: linear-gradient(top, #36b0b6 0%, #2a8a8f 100%);
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='@top-color', endColorstr='@bottom-color', GradientType=0);
+  padding: 5px 10px;
+  -webkit-border-radius: 5px;
+  -moz-border-radius: 5px;
+  -ms-border-radius: 5px;
+  -o-border-radius: 5px;
+  border-radius: 5px;
+}
+#cssmenu ul:before {
+  content: '';
+  display: block;
+}
+#cssmenu ul:after {
+  content: '';
+  display: table;
+  clear: both;
+}
+#cssmenu li {
+  float: left;
+  margin: 0 5px 0 0;
+  border: 1px solid transparent;
+}
+#cssmenu li a {
+  -webkit-border-radius: 5px;
+  -moz-border-radius: 5px;
+  -ms-border-radius: 5px;
+  -o-border-radius: 5px;
+  border-radius: 5px;
+  padding: 8px 15px 9px 15px;
+  display: block;
+  text-decoration: none;
+  color: #ffffff;
+  border: 1px solid transparent;
+  font-size: 16px;
+}
+#cssmenu li.active {
+  -webkit-border-radius: 5px;
+  -moz-border-radius: 5px;
+  -ms-border-radius: 5px;
+  -o-border-radius: 5px;
+  border-radius: 5px;
+  border: 1px solid #36b0b6;
+}
+#cssmenu li.active a {
+  -webkit-border-radius: 5px;
+  -moz-border-radius: 5px;
+  -ms-border-radius: 5px;
+  -o-border-radius: 5px;
+  border-radius: 5px;
+  display: block;
+  background: #1e6468;
+  border: 1px solid #133e40;
+  -moz-box-shadow: inset 0 5px 10px #133e40;
+  -webkit-box-shadow: inset 0 5px 10px #133e40;
+  box-shadow: inset 0 5px 10px #133e40;
+}
+#cssmenu li:hover {
+  -webkit-border-radius: 5px;
+  -moz-border-radius: 5px;
+  -ms-border-radius: 5px;
+  -o-border-radius: 5px;
+  border-radius: 5px;
+  border: 1px solid #36b0b6;
+}
+#cssmenu li:hover a {
+  -webkit-border-radius: 5px;
+  -moz-border-radius: 5px;
+  -ms-border-radius: 5px;
+  -o-border-radius: 5px;
+  border-radius: 5px;
+  display: block;
+  background: #1e6468;
+  border: 1px solid #133e40;
+  -moz-box-shadow: inset 0 5px 10px #133e40;
+  -webkit-box-shadow: inset 0 5px 10px #133e40;
+  box-shadow: inset 0 5px 10px #133e40;
+}
+
+
+#menuLien2,#menuLien3,#menuLien4 {
+  position: absolute;
+  top: 60px;
+  left: 10px;
+  z-index: 5;
+  padding: 2px 16px;
+  background-color: #1e6468;
+  color: white;
+  border: 1px solid #133e40;
+  text-align: left;
+  line-height: 30px;
+  padding-left: 10px;
+  width: 350px;
+
+}
+
+#menuAjoutCollection,#menu{
+  position: absolute;
+  top: 60px;
+  left: 10px;
+  z-index: 5;
+  padding: 2px 16px;
+  background-color: #1e6468;
+  color:white;
+  border: 1px solid #133e40;
+  text-align: left;
+  line-height: 30px;
+  padding-left: 10px;
+  width: 350px;
+  
+}
+
