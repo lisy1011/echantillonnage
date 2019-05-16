@@ -43,7 +43,7 @@ function ajouterCollectionBd(nomCollection) {
     };
     envoyerRequeteAjax(
         donneesMembre.clientHttp,
-        "api/membres/" + localStorage.getItem("mem_id") + "/collections",
+        "/membres/" + localStorage.getItem("mem_id") + "/collections",
         'POST',
         parametresPOST,
         gererReponseAjouterCollectionServer);
@@ -91,7 +91,7 @@ function supprimerCollectionBd(idColl){
     donneesMembre.clientHttp = new XMLHttpRequest();
     envoyerRequeteAjax(
         donneesMembre.clientHttp,
-        "api/membres/" + localStorage.getItem("mem_id") + "/collections/" + idColl,
+        "/membres/" + localStorage.getItem("mem_id") + "/collections/" + idColl,
         'DELETE',
         new Array(0),
         retournerReponsesupprimerCollectionBd);
@@ -133,7 +133,7 @@ function partagerCollectionBd(idColl, nom_utilPartage){
     donneesMembre.clientHttp = new XMLHttpRequest();
     envoyerRequeteAjax(
         donneesMembre.clientHttp,
-        "api/membres/" + localStorage.getItem("mem_id") + "/collections/" + idColl + "/partageAvec/" + nom_utilPartage,
+        "/membres/" + localStorage.getItem("mem_id") + "/collections/" + idColl + "/partageAvec/" + nom_utilPartage,
         //'PUT',
         'POST',
         new Array(0),
@@ -234,7 +234,7 @@ function envoyerLieuBd(lieuId, idColl) {
     donneesMembre.clientHttp = new XMLHttpRequest();
     envoyerRequeteAjax(
         donneesMembre.clientHttp,
-        "api/membres/" + localStorage.getItem("mem_id") + "/collections/" + idColl + "/lieux/" + lieuId,
+        "/membres/" + localStorage.getItem("mem_id") + "/collections/" + idColl + "/lieux/" + lieuId,
         'PUT',
         new Array(0),
         retournerReponseEnvoyerLieuBd);
@@ -304,7 +304,7 @@ function supprimerLieuBd(lieuId) {
     donneesMembre.clientHttp = new XMLHttpRequest();
     envoyerRequeteAjax(
         donneesMembre.clientHttp,
-        "api/membres/" + localStorage.getItem("mem_id") + "/lieux_non_classes/" + lieuId,
+        "/membres/" + localStorage.getItem("mem_id") + "/lieux_non_classes/" + lieuId,
         'DELETE',
         new Array(0),
         retournerReponseSupprimerLieuBd);
@@ -339,7 +339,7 @@ function ajouterLieuServer(lieu) {
     donneesMembre.clientHttp = new XMLHttpRequest();
     envoyerRequeteAjax(
         donneesMembre.clientHttp,
-        "api/membres/" + localStorage.getItem("mem_id") + "/lieux_non_classes",
+        "/membres/" + localStorage.getItem("mem_id") + "/lieux_non_classes",
         'POST',
         lieu,
         retournerReponseAjouterLieuServer);
@@ -383,7 +383,7 @@ function envoyerRechercheColInvitees(){
     donneesMembre.clientHttp = new XMLHttpRequest();
     envoyerRequeteAjax(
         donneesMembre.clientHttp,
-        "api/membres/" + localStorage.getItem("mem_id") + "/collectionsInvitees",
+        "/membres/" + localStorage.getItem("mem_id") + "/collectionsInvitees",
         'GET',
         new Array(0),
         gererReponseGetCollectionsExternes);
