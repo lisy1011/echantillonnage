@@ -176,7 +176,7 @@ function seConnecter(nom, passe) {
     donneesMembre.clientHttp = new XMLHttpRequest();
     envoyerRequeteAjax(
       donneesMembre.clientHttp,
-      "/api/connexion",
+      "/connexion",
       'POST',
       dataConnexion,
       retournerReponseConnexion);
@@ -451,7 +451,7 @@ function creerCompte(courriel, nom, passe) {
     donneesMembre.clientHttp = new XMLHttpRequest();
     envoyerRequeteAjax(
       donneesMembre.clientHttp,
-      "/api/membres",
+      "/membres",
       "POST",
       dataCreation,
       retournerReponseCreation);

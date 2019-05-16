@@ -15,11 +15,11 @@ var routerBase = require('./routes/base');
 var routerApi = require('./routes/api');
 
 // Ajout des routers à l'application.
-//app.use('/', routerBase);
+app.use('/', routerBase);
 // L'API REST a comme route de base '/api'.
-app.use('/', routerApi);
+app.use('/api', routerApi);
 
-var port = process.env.PORT || 8090;
+var port = process.env.PORT || 3000;
 app.listen(port, function () {
     console.log('Serveur Node.js à l\'écoute sur le port %s ', this.address().port);
 });
