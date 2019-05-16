@@ -500,7 +500,7 @@ function chargerDonneesMembre() {
   envoyerRequeteAjax(
 
     donneesMembre.clientHttp,
-    "api/membres/" + localStorage.getItem("mem_id"),
+    "/membres/" + localStorage.getItem("mem_id"),
     'GET',
     new Array(0),
     gererReponseGetMembre);
